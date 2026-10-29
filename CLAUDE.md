@@ -12,6 +12,7 @@ Police work for on-duty members of the panel's police jobs: a job menu (F6, ai-c
 ## Contracts
 
 - Events: `resource/common/police.ts`. Player state bag `cuffed`.
+- Export `SendAlert(x, y, z, text)`: another resource's translated alert (robberies) to on-duty officers, shown like shot alerts.
 
 ## Entry points
 

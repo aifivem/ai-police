@@ -148,16 +148,17 @@ onCache("weapon", (weapon) => {
 
 onServerEvent(
   EVENTS.alert,
-  { args: ([a]) => (isObj(a) && typeof a.x === "number" && typeof a.y === "number" && typeof a.z === "number" ? [{ id: Number(a.id), kind: "shots" as const, x: a.x, y: a.y, z: a.z, street: String(a.street ?? "") }] : null) },
+  { args: ([a]) => (isObj(a) && typeof a.x === "number" && typeof a.y === "number" && typeof a.z === "number" ? [{ id: Number(a.id), kind: a.kind === "custom" ? ("custom" as const) : ("shots" as const), x: a.x, y: a.y, z: a.z, text: String(a.text ?? "").slice(0, 120) }] : null) },
   (alert: Alert) => {
     const blip = AddBlipForCoord(alert.x, alert.y, alert.z);
     SetBlipSprite(blip, 432);
     SetBlipColour(blip, 1);
     SetBlipFlashes(blip, true);
     BeginTextCommandSetBlipName(BLIP_TEXT);
-    AddTextComponentSubstringPlayerName(Locale("POLICE_ALERT_SHOTS", alert.street));
+    const text = alert.kind === "custom" ? alert.text : Locale("POLICE_ALERT_SHOTS", alert.text);
+    AddTextComponentSubstringPlayerName(text);
     EndTextCommandSetBlipName(blip);
-    notify(Locale("POLICE_ALERT_SHOTS", alert.street), "warning", 8000);
+    notify(text, "warning", 8000);
     setTimeout(() => RemoveBlip(blip), settings().alertSeconds * 1000);
   },
 );

@@ -23,11 +23,13 @@ export const EVENTS = {
 
 export interface Alert {
   id: number;
-  kind: "shots";
+  /** shots: gunfire near a street; custom: another resource's text (robberies). */
+  kind: "shots" | "custom";
   x: number;
   y: number;
   z: number;
-  street: string;
+  /** The street (shots) or the alert text (custom). */
+  text: string;
 }
 
 export interface Settings {

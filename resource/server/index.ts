@@ -1,4 +1,4 @@
-import { AdminPanel, aiLog, aiLogChannels, notify, onClientCallback, onClientEvent, optionalExport, resourceExport } from "@aicore-fivem/lib/server";
+import { AdminPanel, aiLog, aiLogChannels, notify, onClientCallback, onClientEvent, optionalExport, registerExport, resourceExport } from "@aicore-fivem/lib/server";
 import { Locale } from "common";
 import { EVENTS, readSettings, readStations, type Action, type Alert } from "common/police";
 import { policeSchema } from "./schema";
@@ -127,6 +127,14 @@ onClientCallback(EVENTS.duty, { args: ([id]) => (typeof id === "string" ? [id] :
   return { ok: true, onDuty };
 });
 
+const sendAlert = (alert: Alert) => {
+  for (const officer of core.GetLoadedSources()) if (onDutyOfficer(officer)) emitNet(EVENTS.alert, officer, alert);
+};
+/** Other resources' alerts (robberies): a translated text at a place, to on-duty officers. */
+registerExport("SendAlert", (x: unknown, y: unknown, z: unknown, text: unknown) => {
+  if (typeof x === "number" && typeof y === "number" && typeof z === "number" && typeof text === "string") sendAlert({ id: ++alertId, kind: "custom", x, y, z, text: text.slice(0, 120) });
+});
+
 /** Shot alerts: at most one per 150 m area every 30 s, sent to on-duty officers only. */
 const recentAlerts: Array<{ x: number; y: number; at: number }> = [];
 let alertId = 0;
@@ -141,8 +149,7 @@ onClientEvent(
     while (recentAlerts.length && now - (recentAlerts[0]?.at ?? 0) > 30_000) recentAlerts.shift();
     if (recentAlerts.some((a) => Math.hypot(a.x - x, a.y - y) < 150)) return;
     recentAlerts.push({ x, y, at: now });
-    const alert: Alert = { id: ++alertId, kind: "shots", x, y, z, street };
-    for (const officer of core.GetLoadedSources()) if (onDutyOfficer(officer)) emitNet(EVENTS.alert, officer, alert);
+    sendAlert({ id: ++alertId, kind: "shots", x, y, z, text: street });
   },
 );
 

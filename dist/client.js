@@ -190,6 +190,8 @@ try{
 	const MENU_EVENTS = {
 		/** Client local: (resource, requestId, itemId | null) the player picked an item or closed the menu. */
 		menuResult: "ai-core:client:menuResult",
+		/** Client local: (resource, requestId, itemId) the pointer or focus is on an item (previews). */
+		menuHover: "ai-core:client:menuHover",
 		/** Client local: (resource, requestId, values | null) the player confirmed or closed the input dialog. */
 		inputResult: "ai-core:client:inputResult"
 	};
@@ -531,26 +533,35 @@ try{
 	var Requests = class {
 		resource = GetCurrentResourceName();
 		waiting = /* @__PURE__ */ new Map();
+		hovers = /* @__PURE__ */ new Map();
 		nextId = 0;
 		constructor() {
 			const answer = (owner, id, value) => {
 				if (owner !== this.resource || typeof id !== "number") return;
 				this.waiting.get(id)?.(value);
 				this.waiting.delete(id);
+				this.hovers.delete(id);
 			};
+			on(MENU_EVENTS.menuHover, (owner, id, item) => {
+				if (owner === this.resource && typeof id === "number" && typeof item === "string") this.hovers.get(id)?.(item);
+			});
 			on(MENU_EVENTS.menuResult, answer);
 			on(MENU_EVENTS.inputResult, answer);
 		}
-		ask(open, read) {
+		ask(open, read, onHover) {
 			const id = ++this.nextId;
 			this.waiting.set(id, read);
+			if (onHover) this.hovers.set(id, onHover);
 			open(id);
 		}
 	};
 	const requests = new Requests();
-	/** Shows ai-core's menu and resolves with the picked item id, or null when the player closed it. */
-	function menu(request) {
-		return new Promise((resolve) => requests.ask((id) => resourceExport(CORE.resource).OpenMenu(id, request), (value) => resolve(typeof value === "string" ? value : null)));
+	/**
+	* Shows ai-core's menu and resolves with the picked item id, or null when the player closed it; `onHover` hears the
+	* item under the pointer or focus (live previews).
+	*/
+	function menu(request, onHover) {
+		return new Promise((resolve) => requests.ask((id) => resourceExport(CORE.resource).OpenMenu(id, request), (value) => resolve(typeof value === "string" ? value : null), onHover));
 	}
 	/** Shows ai-core's input dialog and resolves with the entered values by field name, or null when closed. */
 	function input(request) {
@@ -1023,20 +1034,21 @@ try{
 	});
 	onServerEvent(EVENTS.alert, { args: ([a]) => isObj(a) && typeof a.x === "number" && typeof a.y === "number" && typeof a.z === "number" ? [{
 		id: Number(a.id),
-		kind: "shots",
+		kind: a.kind === "custom" ? "custom" : "shots",
 		x: a.x,
 		y: a.y,
 		z: a.z,
-		street: String(a.street ?? "")
+		text: String(a.text ?? "").slice(0, 120)
 	}] : null }, (alert) => {
 		const blip = AddBlipForCoord(alert.x, alert.y, alert.z);
 		SetBlipSprite(blip, 432);
 		SetBlipColour(blip, 1);
 		SetBlipFlashes(blip, true);
 		BeginTextCommandSetBlipName(BLIP_TEXT);
-		AddTextComponentSubstringPlayerName(Locale("POLICE_ALERT_SHOTS", alert.street));
+		const text = alert.kind === "custom" ? alert.text : Locale("POLICE_ALERT_SHOTS", alert.text);
+		AddTextComponentSubstringPlayerName(text);
 		EndTextCommandSetBlipName(blip);
-		notify(Locale("POLICE_ALERT_SHOTS", alert.street), "warning", 8e3);
+		notify(text, "warning", 8e3);
 		setTimeout(() => RemoveBlip(blip), settings().alertSeconds * 1e3);
 	});
 

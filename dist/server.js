@@ -24927,6 +24927,20 @@ onClientCallback(EVENTS.duty, {
 		onDuty
 	};
 });
+const sendAlert = (alert) => {
+	for (const officer of core.GetLoadedSources()) if (onDutyOfficer(officer)) emitNet(EVENTS.alert, officer, alert);
+};
+/** Other resources' alerts (robberies): a translated text at a place, to on-duty officers. */
+registerExport("SendAlert", (x, y, z, text) => {
+	if (typeof x === "number" && typeof y === "number" && typeof z === "number" && typeof text === "string") sendAlert({
+		id: ++alertId,
+		kind: "custom",
+		x,
+		y,
+		z,
+		text: text.slice(0, 120)
+	});
+});
 /** Shot alerts: at most one per 150 m area every 30 s, sent to on-duty officers only. */
 const recentAlerts = [];
 let alertId = 0;
@@ -24953,15 +24967,14 @@ onClientEvent(EVENTS.shot, {
 		y,
 		at: now
 	});
-	const alert = {
+	sendAlert({
 		id: ++alertId,
 		kind: "shots",
 		x,
 		y,
 		z,
-		street
-	};
-	for (const officer of core.GetLoadedSources()) if (onDutyOfficer(officer)) emitNet(EVENTS.alert, officer, alert);
+		text: street
+	});
 });
 on("playerDropped", () => {
 	const source = Number(globalThis.source);
