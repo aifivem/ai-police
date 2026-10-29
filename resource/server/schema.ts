@@ -1,0 +1,69 @@
+import type { PanelSchema } from "@aicore-fivem/shared";
+
+/** ai-police's panel: which jobs are police, fines, alerts and the duty stations. */
+export const policeSchema: PanelSchema = {
+  title: "ADMIN_TITLE",
+  icon: "id-card",
+  files: {
+    settings: {
+      kind: "settings",
+      sync: "all",
+      sections: {
+        jobs: { type: "names", max: 10, itemMax: 32, pattern: "^[a-z0-9_]{2,32}$" },
+        maxFine: { type: "number", min: 0, max: 10_000_000, integer: true },
+        shotAlerts: { type: "bool" },
+        alertSeconds: { type: "number", min: 10, max: 600, integer: true },
+      },
+    },
+    stations: {
+      kind: "records",
+      sync: "all",
+      labelPath: "label",
+      newRecord: { label: "", duty: { x: 0, y: 0, z: 0 }, blip: true },
+      sections: { label: { type: "text", min: 1, max: 48 }, duty: { type: "vec3" }, blip: { type: "bool" } },
+    },
+  },
+  tabs: [
+    {
+      id: "settings",
+      file: "settings",
+      icon: "id-card",
+      label: "ADMIN_TAB_SETTINGS",
+      desc: "ADMIN_TAB_SETTINGS_DESC",
+      cards: [
+        {
+          icon: "id-card",
+          title: "ADMIN_C_POLICE",
+          desc: "ADMIN_C_POLICE_DESC",
+          fields: [
+            { widget: "tags", path: "jobs", label: "ADMIN_F_JOBS", hint: "ADMIN_H_JOBS", placeholder: "ADMIN_P_JOBS" },
+            { widget: "number", path: "maxFine", label: "ADMIN_F_MAX_FINE", hint: "ADMIN_H_MAX_FINE", min: 0, max: 10_000_000, step: 500, unit: "$" },
+            { widget: "switch", path: "shotAlerts", label: "ADMIN_F_SHOT_ALERTS", hint: "ADMIN_H_SHOT_ALERTS" },
+            { widget: "number", path: "alertSeconds", label: "ADMIN_F_ALERT_SECONDS", hint: "ADMIN_H_ALERT_SECONDS", min: 10, max: 600, unit: "s" },
+          ],
+        },
+      ],
+    },
+    {
+      id: "stations",
+      file: "stations",
+      icon: "location-dot",
+      label: "ADMIN_TAB_STATIONS",
+      desc: "ADMIN_TAB_STATIONS_DESC",
+      createLabel: "ADMIN_NEW_STATION",
+      deleteLabel: "ADMIN_DELETE_STATION",
+      cards: [
+        {
+          icon: "location-dot",
+          title: "ADMIN_C_STATION",
+          desc: "ADMIN_C_STATION_DESC",
+          fields: [
+            { widget: "text", path: "label", label: "ADMIN_F_LABEL", placeholder: "ADMIN_P_LABEL" },
+            { widget: "point", path: "duty", label: "ADMIN_F_DUTY", hint: "ADMIN_H_DUTY", ground: true },
+            { widget: "switch", path: "blip", label: "ADMIN_F_BLIP" },
+          ],
+        },
+      ],
+    },
+  ],
+};

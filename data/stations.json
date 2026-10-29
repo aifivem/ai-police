@@ -1,0 +1,29 @@
+{
+  "mrpd": {
+    "label": "Mission Row Police Department",
+    "duty": {
+      "x": 441.8,
+      "y": -982.1,
+      "z": 30.69
+    },
+    "blip": true
+  },
+  "sandy": {
+    "label": "Sandy Shores Sheriff",
+    "duty": {
+      "x": 1853.2,
+      "y": 3689.6,
+      "z": 34.27
+    },
+    "blip": true
+  },
+  "paleto": {
+    "label": "Paleto Bay Sheriff",
+    "duty": {
+      "x": -448.2,
+      "y": 6013.0,
+      "z": 31.72
+    },
+    "blip": true
+  }
+}
