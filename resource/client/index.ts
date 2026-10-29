@@ -1,4 +1,4 @@
-import { AdminWorld, cache, getPlayerData, input, Keybind, loadLocaleTexts, menu, notify, onCache, onPromptPressed, onServerEvent, showPrompt, hidePrompt, triggerServerCallback, Zones } from "@aicore-fivem/lib/client";
+import { AdminWorld, cache, getPlayerData, input, Keybind, loadLocaleTexts, menu, notify, onCache, onPromptPressed, onServerEvent, optionalExport, showPrompt, hidePrompt, triggerServerCallback, Zones } from "@aicore-fivem/lib/client";
 import { Locale } from "common";
 import { EVENTS, readSettings, readStations, type Action, type Alert } from "common/police";
 import { restraints } from "./restraints";
@@ -87,6 +87,13 @@ async function openMenu(): Promise<void> {
   const action = ACTIONS.find((a) => a.id === picked)?.id;
   if (action) await act(action);
 }
+
+// The same menu from the radial wheel while ai-radialmenu runs (it drops the item when this resource stops).
+function addRadial(): void {
+  optionalExport("ai-radialmenu")?.AddItem({ id: "police", label: Locale("POLICE_MENU_TITLE"), icon: "id-card", onSelect: () => void openMenu() });
+}
+addRadial();
+on("onClientResourceStart", (resource: string) => resource === "ai-radialmenu" && addRadial());
 
 new Keybind({ name: "police_menu_F6", description: Locale("KEYBIND_MENU"), defaultKey: "F6", onPressed: () => void openMenu() });
 

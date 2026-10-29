@@ -478,6 +478,14 @@ try{
 	function resourceExport(resource) {
 		return globalThis.exports[resource];
 	}
+	/** Whether a resource is running now. */
+	function isResourceStarted(resource) {
+		return GetResourceState(resource) === "started";
+	}
+	/** Another resource's exports while it runs, null when it does not (an optional dependency). */
+	function optionalExport(resource) {
+		return isResourceStarted(resource) ? globalThis.exports[resource] : null;
+	}
 
 // ../../../packages/lib/src/client/prompt.ts
 /**
@@ -947,6 +955,16 @@ try{
 		const action = ACTIONS.find((a) => a.id === picked)?.id;
 		if (action) await act(action);
 	}
+	function addRadial() {
+		optionalExport("ai-radialmenu")?.AddItem({
+			id: "police",
+			label: Locale("POLICE_MENU_TITLE"),
+			icon: "id-card",
+			onSelect: () => void openMenu()
+		});
+	}
+	addRadial();
+	on("onClientResourceStart", (resource) => resource === "ai-radialmenu" && addRadial());
 	new Keybind({
 		name: "police_menu_F6",
 		description: Locale("KEYBIND_MENU"),
