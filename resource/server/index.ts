@@ -46,10 +46,8 @@ const ACTIONS: readonly string[] = [
   "fine",
   "impound",
 ] satisfies Action[];
-const onDutyOfficer = (source: number): boolean => {
-  const duty = online.dutyJob(source);
-  return duty !== null && settings.value.jobs.includes(duty);
-};
+const onDutyOfficer = (source: number): boolean =>
+  online.onDutyIn(source, settings.value.jobs);
 
 /** Who is cuffed and who escorts whom (server truth; clients only play it). */
 const cuffed = new PlayerMap<true>({

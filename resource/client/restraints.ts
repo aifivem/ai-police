@@ -1,10 +1,13 @@
 import {
   cache,
   controls,
+  every,
+  type Job,
   onServerEvent,
   player,
+  waitForEntity,
 } from "@aicore-fivem/lib/client";
-import { readId, waitFor } from "@aicore-fivem/lib/shared";
+import { readId } from "@aicore-fivem/lib/shared";
 import { EVENTS } from "common/police";
 
 /** Controls a cuffed player cannot use: attack, aim, sprint, jump, cover, weapon wheel, enter / leave vehicle, melee. */
@@ -18,13 +21,13 @@ const BLOCKED = [
  */
 class Restraints {
   isCuffed = false;
-  private animTimer: ReturnType<typeof setInterval> | null = null;
+  private animTimer: Job | null = null;
 
   async setCuffed(on: boolean): Promise<void> {
     this.isCuffed = on;
     if (on) controls.disable("cuffed", BLOCKED);
     else controls.enable("cuffed");
-    if (this.animTimer) clearInterval(this.animTimer);
+    this.animTimer?.stop();
     this.animTimer = null;
     const ped = cache.ped;
     if (!on) {
@@ -37,19 +40,13 @@ class Restraints {
         void player.playAnim("mp_arresting", "idle", { flag: 49 });
     };
     play();
-    this.animTimer = setInterval(play, 1000);
+    this.animTimer = every(1000, play, { name: "cuffedAnim" });
   }
 
   async escort(officerNetId: number | null): Promise<void> {
     const ped = cache.ped;
     if (officerNetId === null) return DetachEntity(ped, true, false);
-    const officer = await waitFor(
-      () =>
-        NetworkDoesEntityExistWithNetworkId(officerNetId)
-          ? NetToPed(officerNetId)
-          : undefined,
-      3000,
-    ).catch(() => 0);
+    const officer = await waitForEntity(officerNetId, 3000);
     if (officer)
       AttachEntityToEntity(
         ped,
@@ -76,13 +73,7 @@ class Restraints {
       if (cache.vehicle !== false) TaskLeaveVehicle(ped, cache.vehicle, 16);
       return;
     }
-    const vehicle = await waitFor(
-      () =>
-        NetworkDoesEntityExistWithNetworkId(vehicleNetId)
-          ? NetToVeh(vehicleNetId)
-          : undefined,
-      3000,
-    ).catch(() => 0);
+    const vehicle = await waitForEntity(vehicleNetId, 3000);
     if (!vehicle) return;
     DetachEntity(ped, true, false);
     const seat = [1, 2, 0].find((s) => IsVehicleSeatFree(vehicle, s));
