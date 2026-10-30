@@ -1,12 +1,10 @@
-import { AdminWorld, cache, getPlayerData, input, Keybind, loadLocaleTexts, menu, notify, onCache, onPromptPressed, onServerEvent, optionalExport, showPrompt, hidePrompt, triggerServerCallback, Zones } from "@aicore-fivem/lib/client";
+import { AdminWorld, cache, createBlip, getPlayerData, input, Keybind, loadLocaleTexts, menu, notify, onCache, onServerEvent, optionalExport, player, Points, triggerServerCallback } from "@aicore-fivem/lib/client";
 import { Locale } from "common";
 import { EVENTS, readSettings, readStations, type Action, type Alert } from "common/police";
 import { restraints } from "./restraints";
 
 const world = new AdminWorld(["settings", "stations"]);
 const texts = loadLocaleTexts();
-const BLIP_TEXT = "AIPOLICE_BLIP";
-AddTextEntry(BLIP_TEXT, "~a~");
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
 const errorText = (v: unknown, fallback: string): string => {
   const key = isObj(v) && typeof v.error === "string" ? v.error : fallback;
@@ -28,7 +26,7 @@ function closestPlayer(metres: number): number | null {
 }
 
 function closestVehicle(metres: number): number | null {
-  const [x = 0, y = 0, z = 0] = GetEntityCoords(cache.ped, false);
+  const { x, y, z } = player.coords();
   let best: number | null = null;
   let bestDistance = metres;
   for (const vehicle of GetGamePool("CVehicle") as number[]) {
@@ -97,39 +95,28 @@ on("onClientResourceStart", (resource: string) => resource === "ai-radialmenu" &
 
 new Keybind({ name: "police_menu", description: Locale("KEYBIND_MENU"), defaultKey: "F6", onPressed: () => void openMenu() });
 
-/** Duty stations: a zone each with ai-core's prompt, blips. */
-const zones = new Zones();
-let blips: number[] = [];
+/** Duty stations: a point each, with blips. */
+const points = new Points();
 function rebuild(): void {
-  zones.clear();
-  for (const blip of blips) RemoveBlip(blip);
-  blips = [];
-  for (const station of readStations(world.get("stations")).values()) {
-    const id = `duty:${station.id}`;
-    zones.add(id, { shape: { type: "sphere", center: station.duty, radius: 1.5 }, interval: 500, onEnter: () => showPrompt(id, Locale("POLICE_PROMPT_DUTY")), onExit: () => hidePrompt(id) });
-    if (!station.blip) continue;
-    const blip = AddBlipForCoord(station.duty.x, station.duty.y, station.duty.z);
-    SetBlipSprite(blip, 60);
-    SetBlipColour(blip, 29);
-    SetBlipScale(blip, 0.7);
-    SetBlipAsShortRange(blip, true);
-    BeginTextCommandSetBlipName(BLIP_TEXT);
-    AddTextComponentSubstringPlayerName(station.label);
-    EndTextCommandSetBlipName(blip);
-    blips.push(blip);
-  }
+  points.clear();
+  for (const station of readStations(world.get("stations")).values())
+    points.add(`duty:${station.id}`, {
+      coords: station.duty,
+      label: Locale("POLICE_PROMPT_DUTY"),
+      icon: "user-shield",
+      radius: 1.5,
+      blip: station.blip ? { sprite: 60, color: 29, scale: 0.7, label: station.label } : undefined,
+      onPressed: () => toggleDuty(station.id),
+    });
 }
 rebuild();
 world.onChange("stations", rebuild);
-onPromptPressed((id) => {
-  if (!id.startsWith("duty:")) return;
-  void triggerServerCallback(EVENTS.duty, [id.slice(5)])
-    .catch(() => null)
-    .then((r) => {
-      if (isObj(r) && r.ok === true) notify(Locale(r.onDuty === true ? "POLICE_ON_DUTY" : "POLICE_OFF_DUTY"), "success");
-      else notify(errorText(r, "POLICE_ERR_NOT_POLICE"), "error");
-    });
-});
+
+async function toggleDuty(stationId: string): Promise<void> {
+  const r: unknown = await triggerServerCallback(EVENTS.duty, [stationId]).catch(() => null);
+  if (isObj(r) && r.ok === true) notify(Locale(r.onDuty === true ? "POLICE_ON_DUTY" : "POLICE_OFF_DUTY"), "success");
+  else notify(errorText(r, "POLICE_ERR_NOT_POLICE"), "error");
+}
 
 // Shots by anyone are reported (the server ignores officers and throttles by area); checked only while armed.
 let shotTimer: ReturnType<typeof setInterval> | null = null;
@@ -140,7 +127,7 @@ onCache("weapon", (weapon) => {
       ? null
       : setInterval(() => {
           if (!IsPedShooting(cache.ped)) return;
-          const [x = 0, y = 0, z = 0] = GetEntityCoords(cache.ped, false);
+          const { x, y, z } = player.coords();
           const [street] = GetStreetNameAtCoord(x, y, z);
           emitNet(EVENTS.shot, x, y, z, GetStreetNameFromHashKey(street ?? 0));
         }, 500);
@@ -150,14 +137,9 @@ onServerEvent(
   EVENTS.alert,
   { args: ([a]) => (isObj(a) && typeof a.x === "number" && typeof a.y === "number" && typeof a.z === "number" ? [{ id: Number(a.id), kind: a.kind === "custom" ? ("custom" as const) : ("shots" as const), x: a.x, y: a.y, z: a.z, text: String(a.text ?? "").slice(0, 120) }] : null) },
   (alert: Alert) => {
-    const blip = AddBlipForCoord(alert.x, alert.y, alert.z);
-    SetBlipSprite(blip, 432);
-    SetBlipColour(blip, 1);
-    SetBlipFlashes(blip, true);
-    BeginTextCommandSetBlipName(BLIP_TEXT);
     const text = alert.kind === "custom" ? alert.text : Locale("POLICE_ALERT_SHOTS", alert.text);
-    AddTextComponentSubstringPlayerName(text);
-    EndTextCommandSetBlipName(blip);
+    const blip = createBlip({ coords: alert, label: text, sprite: 432, color: 1, scale: 1, shortRange: false });
+    SetBlipFlashes(blip, true);
     notify(text, "warning", 8000);
     setTimeout(() => RemoveBlip(blip), settings().alertSeconds * 1000);
   },

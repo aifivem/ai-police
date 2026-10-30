@@ -17,4 +17,4 @@ Police work for on-duty members of the panel's police jobs: a job menu (F6, ai-c
 ## Entry points
 
 - Server: actions, duty, alerts `resource/server/index.ts`; panel `server/schema.ts`.
-- Client: menu, stations, shot reports, alerts `resource/client/index.ts`; what happens to the target `client/restraints.ts`.
+- Client: menu, duty stations (lib `Points` with blips), shot reports, alert blips (`createBlip`, flashing) `resource/client/index.ts`; what happens to the target `client/restraints.ts`.
