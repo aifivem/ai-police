@@ -46,5 +46,11 @@
   "ADMIN_F_DUTY": "Duty point",
   "ADMIN_H_DUTY": "Stand where officers toggle duty and use your position.",
   "ADMIN_F_BLIP": "Map blip",
-  "ADMIN_F_BLIP_STYLE": "Blip look"
+  "ADMIN_F_BLIP_STYLE": "Blip look",
+  "POLICE_ACTION_JAIL": "Send to prison",
+  "POLICE_JAIL_TITLE": "Send to prison",
+  "POLICE_JAIL_CONFIRM": "Send",
+  "POLICE_JAIL_MINUTES": "Minutes",
+  "POLICE_ERR_JAIL": "Enter the minutes of the sentence.",
+  "POLICE_ERR_NO_PRISON": "No prison is running on this server."
 }

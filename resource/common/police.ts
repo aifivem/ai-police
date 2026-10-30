@@ -10,7 +10,14 @@ import {
 /** ai-police's contracts and panel content. No natives. */
 
 export type Action =
-  "cuff" | "escort" | "seat" | "unseat" | "search" | "fine" | "impound";
+  | "cuff"
+  | "escort"
+  | "seat"
+  | "unseat"
+  | "search"
+  | "fine"
+  | "jail"
+  | "impound";
 
 export const EVENTS = {
   /** Callback: (action, target serverId | vehicle netId, extra?) -> { ok } an officer acts on the closest player / vehicle. */

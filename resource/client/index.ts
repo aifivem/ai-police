@@ -59,6 +59,23 @@ async function act(action: Action): Promise<void> {
       if (!values) return;
       extra = Math.floor(Number(values.amount));
     }
+    if (action === "jail" && target !== null) {
+      const values = await input({
+        title: Locale("POLICE_JAIL_TITLE"),
+        confirm: Locale("POLICE_JAIL_CONFIRM"),
+        fields: [
+          {
+            name: "minutes",
+            label: Locale("POLICE_JAIL_MINUTES"),
+            type: "number",
+            min: 1,
+            max: 10_000,
+          },
+        ],
+      });
+      if (!values) return;
+      extra = Math.floor(Number(values.minutes));
+    }
   }
   if (target === null) return notify(Locale("POLICE_ERR_NOBODY"), "error");
   await callAction(EVENTS.act, [action, target, extra], {
@@ -73,6 +90,7 @@ const ACTIONS = [
   { id: "unseat", icon: "car-rear", label: "POLICE_ACTION_UNSEAT" },
   { id: "search", icon: "box-open", label: "POLICE_ACTION_SEARCH" },
   { id: "fine", icon: "money-bill-wave", label: "POLICE_ACTION_FINE" },
+  { id: "jail", icon: "handcuffs", label: "POLICE_ACTION_JAIL" },
   { id: "impound", icon: "square-parking", label: "POLICE_ACTION_IMPOUND" },
 ] as const satisfies ReadonlyArray<{ id: Action; icon: string; label: string }>;
 

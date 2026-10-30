@@ -15,6 +15,7 @@ import {
   optionalExport,
   PlayerMap,
   PlayerState,
+  prison,
   resourceExport,
   stateBoolean,
   vehicleNearPlayer,
@@ -44,6 +45,7 @@ const ACTIONS: readonly string[] = [
   "unseat",
   "search",
   "fine",
+  "jail",
   "impound",
 ] satisfies Action[];
 const onDutyOfficer = (source: number): boolean =>
@@ -144,6 +146,17 @@ onClientCallback(
         if (!inventory.openInventory(source, target))
           return fail("POLICE_ERR_FAR");
         break;
+      case "jail": {
+        if (!cuffed.has(target)) return fail("POLICE_ERR_NOT_CUFFED");
+        const minutes = readInt(extra, 1, 10_000);
+        if (minutes === null) return fail("POLICE_ERR_JAIL");
+        if (!prison.jail(target, minutes, source))
+          return fail("POLICE_ERR_NO_PRISON");
+        escorting.delete(source);
+        emitNet(EVENTS.escort, target, null);
+        setCuffed(target, false);
+        break;
+      }
       case "fine": {
         const amount = readInt(extra, 1, settings.value.maxFine);
         if (amount === null) return fail("POLICE_ERR_FINE");
