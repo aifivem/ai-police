@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ai-police/data/settings.json",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "This file's JSON Schema (for editors)."
+    },
+    "jobs": {
+      "description": "Police jobs: Job names whose on-duty members act as police.",
+      "type": "array",
+      "maxItems": 10,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "maxLength": 32,
+        "pattern": "^[a-z0-9_]{2,32}$"
+      }
+    },
+    "maxFine": {
+      "description": "Highest fine: Fines are taken from the bank and go to the job's account.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000000
+    },
+    "shotAlerts": {
+      "description": "Shot alerts: Gunfire by civilians puts a blip on the map of on-duty officers.",
+      "type": "boolean"
+    },
+    "alertSeconds": {
+      "description": "Alert time: How long an alert blip stays.",
+      "type": "integer",
+      "minimum": 10,
+      "maximum": 600
+    }
+  },
+  "required": [
+    "jobs",
+    "maxFine",
+    "shotAlerts",
+    "alertSeconds"
+  ]
+}

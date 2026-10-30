@@ -1,4 +1,5 @@
 {
+  "$schema": "./schemas/stations.schema.json",
   "mrpd": {
     "label": "Mission Row Police Department",
     "duty": {
@@ -21,7 +22,7 @@
     "label": "Paleto Bay Sheriff",
     "duty": {
       "x": -448.2,
-      "y": 6013.0,
+      "y": 6013,
       "z": 31.72
     },
     "blip": true
