@@ -1,4 +1,11 @@
-import { bool, int, num, record, str } from "@aicore-fivem/lib/shared";
+import {
+  bool,
+  int,
+  num,
+  readBlipStyle,
+  record,
+  str,
+} from "@aicore-fivem/lib/shared";
 
 /** ai-police's contracts and panel content. No natives. */
 
@@ -55,10 +62,6 @@ export function readStation(id: string, v: Record<string, unknown>): Station {
     label: str(v.label, id, 48),
     duty: { x: num(d.x, 0), y: num(d.y, 0), z: num(d.z, 0) },
     blip: bool(v.blip, true),
-    blipStyle: {
-      sprite: int(style.sprite, 60, 0, 1000),
-      color: int(style.color, 29, 0, 100),
-      scale: num(style.scale, 0.7, 0.3, 2),
-    },
+    blipStyle: readBlipStyle(style, { sprite: 60, color: 29, scale: 0.7 }),
   };
 }

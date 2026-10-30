@@ -107,7 +107,35 @@ function readInt(value, min, max) {
 const readId = (value) => readInt(value, 1, 2147483647), fail = (error) => ({
 	ok: !1,
 	error
-}), distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z), isObject = (value) => typeof value == "object" && !!value && !Array.isArray(value);
+}), distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z), BLIP_STYLE_FIELDS = {
+	sprite: {
+		type: "number",
+		min: 0,
+		max: 1e3,
+		integer: !0
+	},
+	color: {
+		type: "number",
+		min: 0,
+		max: 100,
+		integer: !0
+	},
+	scale: {
+		type: "number",
+		min: .3,
+		max: 2
+	}
+};
+function readBlipStyle(value, fallback) {
+	let v = record(value);
+	return {
+		sprite: int(v.sprite, fallback.sprite, 0, 1e3),
+		color: int(v.color, fallback.color, 0, 100),
+		scale: num(v.scale, fallback.scale, .3, 2)
+	};
+}
+// ../../../packages/lib/src/shared/records.ts
+const isObject = (value) => typeof value == "object" && !!value && !Array.isArray(value);
 function readRecords(raw, readOne) {
 	let out = new Map();
 	if (!isObject(raw)) return out;
@@ -929,6 +957,10 @@ var OnlinePlayers = class {
 	character(source) {
 		return this.start(), this.players.get(source)?.character ?? null;
 	}
+	name(source, options = {}) {
+		let c = this.character(source);
+		return c ? `${c.firstname} ${c.lastname}` : options.fallback === !1 ? "" : GetPlayerName(String(source));
+	}
 	jobs(source) {
 		return this.start(), this.players.get(source)?.jobNames ?? [];
 	}
@@ -1207,11 +1239,11 @@ function readStation(id, v) {
 			z: num(d.z, 0)
 		},
 		blip: bool(v.blip, !0),
-		blipStyle: {
-			sprite: int(style.sprite, 60, 0, 1e3),
-			color: int(style.color, 29, 0, 100),
-			scale: num(style.scale, .7, .3, 2)
-		}
+		blipStyle: readBlipStyle(style, {
+			sprite: 60,
+			color: 29,
+			scale: .7
+		})
 	};
 }
 // resource/server/schema.ts
@@ -1268,25 +1300,7 @@ const policeSchema = {
 				blipStyle: {
 					type: "object",
 					optional: !0,
-					fields: {
-						sprite: {
-							type: "number",
-							min: 0,
-							max: 1e3,
-							integer: !0
-						},
-						color: {
-							type: "number",
-							min: 0,
-							max: 100,
-							integer: !0
-						},
-						scale: {
-							type: "number",
-							min: .3,
-							max: 2
-						}
-					}
+					fields: BLIP_STYLE_FIELDS
 				}
 			}
 		}
