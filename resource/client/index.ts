@@ -7,6 +7,7 @@ import {
   Keybind,
   loadLocaleTexts,
   menu,
+  nearestVehicle,
   notify,
   onCache,
   onServerEvent,
@@ -51,19 +52,6 @@ function closestPlayer(metres: number): number | null {
   return best;
 }
 
-function closestVehicle(metres: number): number | null {
-  const { x, y, z } = player.coords();
-  let best: number | null = null;
-  let bestDistance = metres;
-  for (const vehicle of GetGamePool("CVehicle") as number[]) {
-    const [vx = 0, vy = 0, vz = 0] = GetEntityCoords(vehicle, false);
-    const d = Math.hypot(vx - x, vy - y, vz - z);
-    if (d < bestDistance && NetworkGetEntityIsNetworked(vehicle))
-      [best, bestDistance] = [vehicle, d];
-  }
-  return best;
-}
-
 const settings = () => readSettings(world.get("settings"));
 const onDuty = (): boolean => {
   const duty = getPlayerData("duty");
@@ -74,12 +62,12 @@ async function act(action: Action): Promise<void> {
   let target: number | null;
   let extra: unknown;
   if (action === "impound") {
-    const vehicle = closestVehicle(6);
+    const vehicle = nearestVehicle(6);
     target = vehicle ? NetworkGetNetworkIdFromEntity(vehicle) : null;
   } else {
     target = closestPlayer(3);
     if (action === "seat") {
-      const vehicle = closestVehicle(6);
+      const vehicle = nearestVehicle(6);
       extra = vehicle ? NetworkGetNetworkIdFromEntity(vehicle) : null;
     }
     if (action === "fine" && target !== null) {

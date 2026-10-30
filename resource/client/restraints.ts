@@ -1,8 +1,8 @@
 import {
   cache,
+  controls,
   onServerEvent,
   requestAnimDict,
-  TickLoop,
 } from "@aicore-fivem/lib/client";
 import { waitFor } from "@aicore-fivem/lib/shared";
 import { EVENTS } from "common/police";
@@ -18,14 +18,12 @@ const BLOCKED = [
  */
 class Restraints {
   isCuffed = false;
-  private readonly tick = new TickLoop(() => {
-    for (const control of BLOCKED) DisableControlAction(0, control, true);
-  });
   private animTimer: ReturnType<typeof setInterval> | null = null;
 
   async setCuffed(on: boolean): Promise<void> {
     this.isCuffed = on;
-    this.tick.set(on);
+    if (on) controls.disable("cuffed", BLOCKED);
+    else controls.enable("cuffed");
     if (this.animTimer) clearInterval(this.animTimer);
     this.animTimer = null;
     const ped = cache.ped;
