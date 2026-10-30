@@ -1,4 +1,4 @@
-import { AdminPanel, aiLog, aiLogChannels, inventory, notify, onClientCallback, onClientEvent, optionalExport, registerExport, resourceExport } from "@aicore-fivem/lib/server";
+import { AdminPanel, aiLog, aiLogChannels, inventory, notify, onClientCallback, onClientEvent, online, optionalExport, registerExport, resourceExport } from "@aicore-fivem/lib/server";
 import { Locale } from "common";
 import { EVENTS, readSettings, readStations, type Action, type Alert } from "common/police";
 import { policeSchema } from "./schema";
@@ -22,7 +22,7 @@ const near = (a: number, b: number, metres: number): boolean => {
   return Math.hypot(p.x - q.x, p.y - q.y, p.z - q.z) <= metres;
 };
 const onDutyOfficer = (source: number): boolean => {
-  const duty = core.GetDutyJob(source);
+  const duty = online.dutyJob(source);
   return duty !== null && content.settings.jobs.includes(duty);
 };
 
@@ -128,7 +128,8 @@ onClientCallback(EVENTS.duty, { args: ([id]) => (typeof id === "string" ? [id] :
 });
 
 const sendAlert = (alert: Alert) => {
-  for (const officer of core.GetLoadedSources()) if (onDutyOfficer(officer)) emitNet(EVENTS.alert, officer, alert);
+  // Only the on-duty sets of the police jobs, never a walk over everyone online.
+  for (const job of content.settings.jobs) for (const officer of online.onDutyFor(job)) emitNet(EVENTS.alert, officer, alert);
 };
 /** Other resources' alerts (robberies): a translated text at a place, to on-duty officers. */
 registerExport("SendAlert", (x: unknown, y: unknown, z: unknown, text: unknown) => {
