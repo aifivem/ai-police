@@ -95,7 +95,7 @@ function addRadial(): void {
 addRadial();
 on("onClientResourceStart", (resource: string) => resource === "ai-radialmenu" && addRadial());
 
-new Keybind({ name: "police_menu_F6", description: Locale("KEYBIND_MENU"), defaultKey: "F6", onPressed: () => void openMenu() });
+new Keybind({ name: "police_menu", description: Locale("KEYBIND_MENU"), defaultKey: "F6", onPressed: () => void openMenu() });
 
 /** Duty stations: a zone each with ai-core's prompt, blips. */
 const zones = new Zones();

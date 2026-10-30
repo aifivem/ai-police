@@ -1,4 +1,4 @@
-import { AdminPanel, aiLog, aiLogChannels, notify, onClientCallback, onClientEvent, optionalExport, registerExport, resourceExport } from "@aicore-fivem/lib/server";
+import { AdminPanel, aiLog, aiLogChannels, inventory, notify, onClientCallback, onClientEvent, optionalExport, registerExport, resourceExport } from "@aicore-fivem/lib/server";
 import { Locale } from "common";
 import { EVENTS, readSettings, readStations, type Action, type Alert } from "common/police";
 import { policeSchema } from "./schema";
@@ -94,7 +94,7 @@ onClientCallback(
         break;
       case "search":
         if (!cuffed.has(target) && !Player(target).state.dead) return fail("POLICE_ERR_NOT_CUFFED");
-        if (!optionalExport("ai-inventory")?.OpenInventory(source, target)) return fail("POLICE_ERR_FAR");
+        if (!inventory.openInventory(source, target)) return fail("POLICE_ERR_FAR");
         break;
       case "fine": {
         const amount = typeof extra === "number" && Number.isInteger(extra) ? extra : 0;
