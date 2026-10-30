@@ -287,7 +287,7 @@ function toPatch(value) {
 		default: return null;
 	}
 }
-const clone = (value) => value === void 0 ? value : JSON.parse(JSON.stringify(value)), core$8 = resourceExport(CORE.resource), ERR = {
+const clone = (value) => value === void 0 ? value : JSON.parse(JSON.stringify(value)), core$9 = resourceExport(CORE.resource), ERR = {
 	type: "ADMIN_ERR_TYPE",
 	range: "ADMIN_ERR_RANGE",
 	length: "ADMIN_ERR_LENGTH",
@@ -301,7 +301,7 @@ const clone = (value) => value === void 0 ? value : JSON.parse(JSON.stringify(va
 		if (cached && Date.now() - cached.at < 2e3) return cached.values.size > 0 ? cached.values : null;
 		let list = [];
 		try {
-			list = core$8.GetLookupValues(source);
+			list = core$9.GetLookupValues(source);
 		} catch {}
 		let values = new Set(Array.isArray(list) ? list.filter((v) => typeof v == "string") : []);
 		return this.lists.set(source, {
@@ -503,7 +503,7 @@ function writeSchema(resource, name, text, log) {
 	(0, node_fs_promises.mkdir)(dir, { recursive: !0 }).then(() => (0, node_fs_promises.writeFile)(`${dir}/${name}.schema.json`, text, "utf8")).catch((error) => log.error(`writing ${resource}/${path} failed`, error));
 }
 // ../../../packages/lib/src/server/admin/panel.ts
-const core$7 = resourceExport(CORE.resource), DEFAULT_KEY = "^[a-z0-9_]{2,32}$";
+const core$8 = resourceExport(CORE.resource), DEFAULT_KEY = "^[a-z0-9_]{2,32}$";
 function imported(spec, value) {
 	let base = clone(spec.newRecord ?? {}), out = {};
 	for (let name of Object.keys(spec.sections)) {
@@ -524,7 +524,7 @@ var AdminPanel = class {
 	constructor(schema) {
 		this.schema = schema;
 		for (let [name, spec] of Object.entries(schema.files)) this.load(name, spec);
-		registerExport("AdminPanelSnapshot", () => this.snapshot()), registerExport("AdminPanelApply", (admin, patch) => this.apply(admin, patch)), onClientCallback(ADMIN.worldChangesCallback(this.resource), () => Object.fromEntries(this.worldChanges)), setImmediate(() => core$7.RegisterAdminPanel(this.resource));
+		registerExport("AdminPanelSnapshot", () => this.snapshot()), registerExport("AdminPanelApply", (admin, patch) => this.apply(admin, patch)), onClientCallback(ADMIN.worldChangesCallback(this.resource), () => Object.fromEntries(this.worldChanges)), setImmediate(() => core$8.RegisterAdminPanel(this.resource));
 	}
 	get(file) {
 		return this.data.get(file) ?? {};
@@ -617,7 +617,7 @@ var AdminPanel = class {
 		let spec = this.schema.files[file], data = this.get(file), value = key === void 0 ? data : data[key] ?? null;
 		this.dataFiles.get(file)?.write(data);
 		for (let handler of this.handlers.get(file) ?? []) handler(key, value);
-		if (core$7.AdminPanelChanged({
+		if (core$8.AdminPanelChanged({
 			resource: this.resource,
 			file,
 			key,
@@ -655,19 +655,19 @@ function notify(source, text, kind = "info", duration) {
 	emitNet(CORE.clientNotifyEvent, source, notification);
 }
 // ../../../packages/lib/src/server/inventory.ts
-const core$6 = resourceExport(CORE.resource), inventory = {
-	addItem: (inv, item, count = 1, metadata, slot) => core$6.AddItem(inv, item, count, metadata, slot),
-	removeItem: (inv, item, count = 1, metadata, slot) => core$6.RemoveItem(inv, item, count, metadata, slot),
-	getItemCount: (inv, item, metadata) => core$6.GetItemCount(inv, item, metadata),
-	hasItem: (inv, item, count = 1) => core$6.HasItem(inv, item, count),
-	canCarryItem: (inv, item, count = 1, metadata) => core$6.CanCarryItem(inv, item, count, metadata),
-	getItems: (inv) => core$6.GetItems(inv),
-	clearInventory: (inv) => core$6.ClearInventory(inv),
-	registerStash: (name, label, slots, maxWeight, jobs = []) => core$6.RegisterStash(name, label, slots, maxWeight, jobs),
-	openInventory: (source, inv) => core$6.OpenInventory(source, inv),
-	registerUsableItem: (name, handler) => core$6.RegisterUsableItem(name, handler),
-	getItemDefinition: (name) => core$6.GetItemDefinition(name)
-}, core$5 = resourceExport(CORE.resource);
+const core$7 = resourceExport(CORE.resource), inventory = {
+	addItem: (inv, item, count = 1, metadata, slot) => core$7.AddItem(inv, item, count, metadata, slot),
+	removeItem: (inv, item, count = 1, metadata, slot) => core$7.RemoveItem(inv, item, count, metadata, slot),
+	getItemCount: (inv, item, metadata) => core$7.GetItemCount(inv, item, metadata),
+	hasItem: (inv, item, count = 1) => core$7.HasItem(inv, item, count),
+	canCarryItem: (inv, item, count = 1, metadata) => core$7.CanCarryItem(inv, item, count, metadata),
+	getItems: (inv) => core$7.GetItems(inv),
+	clearInventory: (inv) => core$7.ClearInventory(inv),
+	registerStash: (name, label, slots, maxWeight, jobs = []) => core$7.RegisterStash(name, label, slots, maxWeight, jobs),
+	openInventory: (source, inv) => core$7.OpenInventory(source, inv),
+	registerUsableItem: (name, handler) => core$7.RegisterUsableItem(name, handler),
+	getItemDefinition: (name) => core$7.GetItemDefinition(name)
+}, core$6 = resourceExport(CORE.resource);
 var OnlinePlayers = class {
 	players = new Map();
 	onDuty = new Map();
@@ -676,7 +676,7 @@ var OnlinePlayers = class {
 		if (this.started) return;
 		this.started = !0;
 		let load = (source, character) => {
-			this.put(source, character, (core$5.GetJobs(source) ?? []).map((m) => m.job), (core$5.GetGangs(source) ?? []).map((m) => m.gang)), this.setDuty(source, core$5.GetDutyJob(source));
+			this.put(source, character, (core$6.GetJobs(source) ?? []).map((m) => m.job), (core$6.GetGangs(source) ?? []).map((m) => m.gang)), this.setDuty(source, core$6.GetDutyJob(source));
 		};
 		on(CORE.playerLoadedEvent, load), on(CORE.playerUnloadedEvent, (source) => this.drop(source)), on(CORE.jobsChangedEvent, (source, jobs) => {
 			let player = this.players.get(source);
@@ -685,8 +685,8 @@ var OnlinePlayers = class {
 			let player = this.players.get(source);
 			player && (player.gangs = gangs.map((m) => m.gang));
 		}), on(CORE.dutyChangedEvent, (source, job) => this.setDuty(source, job));
-		for (let source of core$5.GetLoadedSources()) {
-			let character = core$5.GetCharacter(source);
+		for (let source of core$6.GetLoadedSources()) {
+			let character = core$6.GetCharacter(source);
 			character && load(source, character);
 		}
 	}
@@ -818,8 +818,8 @@ var Mirror = class {
 	}
 };
 resourceExport(CORE.resource), resourceExport(CORE.resource);
-// resource/common/locale.ts
-const Locale = createLocale();
+// ../../../packages/lib/src/server/dispatch.ts
+const core$1 = resourceExport(CORE.resource), dispatch = { alert: (alert) => core$1.SendDispatchAlert(alert) }, Locale = createLocale();
 GetCurrentResourceName(), IsDuplicityVersion();
 // resource/common/police.ts
 const EVENTS = {
@@ -828,16 +828,14 @@ const EVENTS = {
 	shot: "ai-police:shot",
 	cuffed: "ai-police:client:cuffed",
 	escort: "ai-police:client:escort",
-	seat: "ai-police:client:seat",
-	alert: "ai-police:client:alert"
+	seat: "ai-police:client:seat"
 }, names = (v) => Array.isArray(v) ? v.filter((x) => typeof x == "string") : [];
 function readSettings(raw) {
 	let s = record(raw);
 	return {
 		jobs: names(s.jobs).length ? names(s.jobs) : ["police"],
 		maxFine: int(s.maxFine, 5e4, 0, 1e7),
-		shotAlerts: bool(s.shotAlerts, !0),
-		alertSeconds: int(s.alertSeconds, 60, 10, 600)
+		shotAlerts: bool(s.shotAlerts, !0)
 	};
 }
 function readStations(raw) {
@@ -879,13 +877,7 @@ const policeSchema = {
 					max: 1e7,
 					integer: !0
 				},
-				shotAlerts: { type: "bool" },
-				alertSeconds: {
-					type: "number",
-					min: 10,
-					max: 600,
-					integer: !0
-				}
+				shotAlerts: { type: "bool" }
 			}
 		},
 		stations: {
@@ -946,15 +938,6 @@ const policeSchema = {
 					path: "shotAlerts",
 					label: "ADMIN_F_SHOT_ALERTS",
 					hint: "ADMIN_H_SHOT_ALERTS"
-				},
-				{
-					widget: "number",
-					path: "alertSeconds",
-					label: "ADMIN_F_ALERT_SECONDS",
-					hint: "ADMIN_H_ALERT_SECONDS",
-					min: 10,
-					max: 600,
-					unit: "s"
 				}
 			]
 		}]
@@ -1107,49 +1090,43 @@ onClientCallback(EVENTS.act, {
 		onDuty
 	};
 });
-const sendAlert = (alert) => {
-	for (let job of content.settings.jobs) for (let officer of online.onDutyFor(job)) emitNet(EVENTS.alert, officer, alert);
-};
-registerExport("SendAlert", (x, y, z, text) => {
-	typeof x == "number" && typeof y == "number" && typeof z == "number" && typeof text == "string" && sendAlert({
-		id: ++alertId,
-		kind: "custom",
-		x,
-		y,
-		z,
-		text: text.slice(0, 120)
-	});
-});
-const recentAlerts = [];
-let alertId = 0;
+const recentShots = [];
 onClientEvent(EVENTS.shot, {
-	args: ([x, y, z, street]) => typeof x == "number" && typeof y == "number" && typeof z == "number" && typeof street == "string" ? [
+	args: ([x, y, z]) => typeof x == "number" && typeof y == "number" && typeof z == "number" ? [
 		x,
 		y,
-		z,
-		street.slice(0, 64)
+		z
 	] : null,
 	rate: {
 		count: 1,
 		windowMs: 5e3
 	}
-}, (source, x, y, z, street) => {
+}, (source, x, y, z) => {
 	if (!content.settings.shotAlerts || onDutyOfficer(source)) return;
 	let p = pos(source);
 	if (Math.hypot(p.x - x, p.y - y) > 50) return;
 	let now = Date.now();
-	for (; recentAlerts.length && now - (recentAlerts[0]?.at ?? 0) > 3e4;) recentAlerts.shift();
-	recentAlerts.some((a) => Math.hypot(a.x - x, a.y - y) < 150) || (recentAlerts.push({
+	for (; recentShots.length && now - (recentShots[0]?.at ?? 0) > 3e4;) recentShots.shift();
+	recentShots.some((a) => Math.hypot(a.x - x, a.y - y) < 150) || (recentShots.push({
 		x,
 		y,
 		at: now
-	}), sendAlert({
-		id: ++alertId,
-		kind: "shots",
-		x,
-		y,
-		z,
-		text: street
+	}), dispatch.alert({
+		code: "10-71",
+		title: Locale("POLICE_ALERT_SHOTS"),
+		coords: {
+			x,
+			y,
+			z
+		},
+		source,
+		jobs: content.settings.jobs,
+		icon: "gun",
+		blip: {
+			sprite: 110,
+			color: 1
+		},
+		priority: "high"
 	}));
 }), on("playerDropped", () => {
 	let source = Number(globalThis.source);

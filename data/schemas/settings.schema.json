@@ -25,20 +25,13 @@
       "maximum": 10000000
     },
     "shotAlerts": {
-      "description": "Shot alerts: Gunfire by civilians puts a blip on the map of on-duty officers.",
+      "description": "Shot alerts: Gunfire by civilians alerts on-duty officers through the alert script ai-core uses. Turn it off when that script sends its own shot alerts.",
       "type": "boolean"
-    },
-    "alertSeconds": {
-      "description": "Alert time: How long an alert blip stays.",
-      "type": "integer",
-      "minimum": 10,
-      "maximum": 600
     }
   },
   "required": [
     "jobs",
     "maxFine",
-    "shotAlerts",
-    "alertSeconds"
+    "shotAlerts"
   ]
 }

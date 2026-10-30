@@ -4,6 +4,5 @@
     "police"
   ],
   "maxFine": 50000,
-  "shotAlerts": true,
-  "alertSeconds": 60
+  "shotAlerts": true
 }

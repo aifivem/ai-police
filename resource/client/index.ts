@@ -1,7 +1,6 @@
 import {
   AdminWorld,
   cache,
-  createBlip,
   getPlayerData,
   input,
   Keybind,
@@ -10,20 +9,13 @@ import {
   nearestVehicle,
   notify,
   onCache,
-  onServerEvent,
   optionalExport,
   player,
   Points,
   triggerServerCallback,
 } from "@aicore-fivem/lib/client";
 import { Locale } from "common";
-import {
-  EVENTS,
-  readSettings,
-  readStations,
-  type Action,
-  type Alert,
-} from "common/police";
+import { EVENTS, readSettings, readStations, type Action } from "common/police";
 import { restraints } from "./restraints";
 
 const world = new AdminWorld(["settings", "stations"]);
@@ -185,47 +177,6 @@ onCache("weapon", (weapon) => {
       : setInterval(() => {
           if (!IsPedShooting(cache.ped)) return;
           const { x, y, z } = player.coords();
-          const [street] = GetStreetNameAtCoord(x, y, z);
-          emitNet(EVENTS.shot, x, y, z, GetStreetNameFromHashKey(street ?? 0));
+          emitNet(EVENTS.shot, x, y, z);
         }, 500);
 });
-
-onServerEvent(
-  EVENTS.alert,
-  {
-    args: ([a]) =>
-      isObj(a) &&
-      typeof a.x === "number" &&
-      typeof a.y === "number" &&
-      typeof a.z === "number"
-        ? [
-            {
-              id: Number(a.id),
-              kind:
-                a.kind === "custom" ? ("custom" as const) : ("shots" as const),
-              x: a.x,
-              y: a.y,
-              z: a.z,
-              text: String(a.text ?? "").slice(0, 120),
-            },
-          ]
-        : null,
-  },
-  (alert: Alert) => {
-    const text =
-      alert.kind === "custom"
-        ? alert.text
-        : Locale("POLICE_ALERT_SHOTS", alert.text);
-    const blip = createBlip({
-      coords: alert,
-      label: text,
-      sprite: 432,
-      color: 1,
-      scale: 1,
-      shortRange: false,
-    });
-    SetBlipFlashes(blip, true);
-    notify(text, "warning", 8000);
-    setTimeout(() => RemoveBlip(blip), settings().alertSeconds * 1000);
-  },
-);

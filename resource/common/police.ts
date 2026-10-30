@@ -18,27 +18,12 @@ export const EVENTS = {
   escort: "ai-police:client:escort",
   /** Server -> target: (vehicle netId | null) sit in the back of a vehicle, or get out. */
   seat: "ai-police:client:seat",
-  /** Server -> officers on duty: (alert: Alert). */
-  alert: "ai-police:client:alert",
 } as const;
-
-export interface Alert {
-  id: number;
-  /** shots: gunfire near a street; custom: another resource's text (robberies). */
-  kind: "shots" | "custom";
-  x: number;
-  y: number;
-  z: number;
-  /** The street (shots) or the alert text (custom). */
-  text: string;
-}
 
 export interface Settings {
   jobs: string[];
   maxFine: number;
   shotAlerts: boolean;
-  /** How long an alert blip stays on the map. */
-  alertSeconds: number;
 }
 
 export interface Station {
@@ -57,7 +42,6 @@ export function readSettings(raw: unknown): Settings {
     jobs: names(s.jobs).length ? names(s.jobs) : ["police"],
     maxFine: int(s.maxFine, 50_000, 0, 10_000_000),
     shotAlerts: bool(s.shotAlerts, true),
-    alertSeconds: int(s.alertSeconds, 60, 10, 600),
   };
 }
 

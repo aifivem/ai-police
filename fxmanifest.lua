@@ -1,5 +1,5 @@
 name 'ai-police'
-author 'ai-core'
+author 'TGIANN'
 version '0.1.0'
 license 'GPL-3.0-only'
 description 'Police: job menu, cuffs, escort, search, fines, impound, duty points, shot alerts'

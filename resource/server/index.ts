@@ -3,6 +3,7 @@ import {
   AdminPanel,
   aiLog,
   aiLogChannels,
+  dispatch,
   inventory,
   notify,
   onClientCallback,
@@ -10,18 +11,11 @@ import {
   online,
   optionalExport,
   PlayerState,
-  registerExport,
   resourceExport,
   stateBoolean,
 } from "@aicore-fivem/lib/server";
 import { Locale } from "common";
-import {
-  EVENTS,
-  readSettings,
-  readStations,
-  type Action,
-  type Alert,
-} from "common/police";
+import { EVENTS, readSettings, readStations, type Action } from "common/police";
 import { policeSchema } from "./schema";
 
 const core = resourceExport("ai-core");
@@ -209,58 +203,36 @@ onClientCallback(
   },
 );
 
-const sendAlert = (alert: Alert) => {
-  // Only the on-duty sets of the police jobs, never a walk over everyone online.
-  for (const job of content.settings.jobs)
-    for (const officer of online.onDutyFor(job))
-      emitNet(EVENTS.alert, officer, alert);
-};
-/** Other resources' alerts (robberies): a translated text at a place, to on-duty officers. */
-registerExport(
-  "SendAlert",
-  (x: unknown, y: unknown, z: unknown, text: unknown) => {
-    if (
-      typeof x === "number" &&
-      typeof y === "number" &&
-      typeof z === "number" &&
-      typeof text === "string"
-    )
-      sendAlert({
-        id: ++alertId,
-        kind: "custom",
-        x,
-        y,
-        z,
-        text: text.slice(0, 120),
-      });
-  },
-);
-
-/** Shot alerts: at most one per 150 m area every 30 s, sent to on-duty officers only. */
-const recentAlerts: Array<{ x: number; y: number; at: number }> = [];
-let alertId = 0;
+/** Shot alerts: at most one per 150 m area every 30 s, through ai-core's dispatch layer (whatever alert system runs). */
+const recentShots: Array<{ x: number; y: number; at: number }> = [];
 onClientEvent(
   EVENTS.shot,
   {
-    args: ([x, y, z, street]) =>
-      typeof x === "number" &&
-      typeof y === "number" &&
-      typeof z === "number" &&
-      typeof street === "string"
-        ? [x, y, z, street.slice(0, 64)]
+    args: ([x, y, z]) =>
+      typeof x === "number" && typeof y === "number" && typeof z === "number"
+        ? [x, y, z]
         : null,
     rate: { count: 1, windowMs: 5000 },
   },
-  (source, x, y, z, street) => {
+  (source, x, y, z) => {
     if (!content.settings.shotAlerts || onDutyOfficer(source)) return;
     const p = pos(source);
     if (Math.hypot(p.x - x, p.y - y) > 50) return;
     const now = Date.now();
-    while (recentAlerts.length && now - (recentAlerts[0]?.at ?? 0) > 30_000)
-      recentAlerts.shift();
-    if (recentAlerts.some((a) => Math.hypot(a.x - x, a.y - y) < 150)) return;
-    recentAlerts.push({ x, y, at: now });
-    sendAlert({ id: ++alertId, kind: "shots", x, y, z, text: street });
+    while (recentShots.length && now - (recentShots[0]?.at ?? 0) > 30_000)
+      recentShots.shift();
+    if (recentShots.some((a) => Math.hypot(a.x - x, a.y - y) < 150)) return;
+    recentShots.push({ x, y, at: now });
+    dispatch.alert({
+      code: "10-71",
+      title: Locale("POLICE_ALERT_SHOTS"),
+      coords: { x, y, z },
+      source,
+      jobs: content.settings.jobs,
+      icon: "gun",
+      blip: { sprite: 110, color: 1 },
+      priority: "high",
+    });
   },
 );
 

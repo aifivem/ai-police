@@ -18,7 +18,6 @@ export const policeSchema: PanelSchema = {
         },
         maxFine: { type: "number", min: 0, max: 10_000_000, integer: true },
         shotAlerts: { type: "bool" },
-        alertSeconds: { type: "number", min: 10, max: 600, integer: true },
       },
     },
     stations: {
@@ -69,15 +68,6 @@ export const policeSchema: PanelSchema = {
               path: "shotAlerts",
               label: "ADMIN_F_SHOT_ALERTS",
               hint: "ADMIN_H_SHOT_ALERTS",
-            },
-            {
-              widget: "number",
-              path: "alertSeconds",
-              label: "ADMIN_F_ALERT_SECONDS",
-              hint: "ADMIN_H_ALERT_SECONDS",
-              min: 10,
-              max: 600,
-              unit: "s",
             },
           ],
         },
