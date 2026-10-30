@@ -3,38 +3,38 @@ import {
   onServerEvent,
   requestAnimDict,
   TickLoop,
-} from "@aicore-fivem/lib/client"
-import { waitFor } from "@aicore-fivem/lib/shared"
-import { EVENTS } from "common/police"
+} from "@aicore-fivem/lib/client";
+import { waitFor } from "@aicore-fivem/lib/shared";
+import { EVENTS } from "common/police";
 
 /** Controls a cuffed player cannot use: attack, aim, sprint, jump, cover, weapon wheel, enter / leave vehicle, melee. */
 const BLOCKED = [
   24, 25, 21, 22, 44, 37, 23, 75, 140, 141, 142, 143, 257, 263, 264,
-]
+];
 
 /**
  * What an officer does to this player, applied on this client: the cuffed animation and blocked controls (a tick only
  * while cuffed), being escorted (attached to the officer's ped), being seated in or taken out of a vehicle.
  */
 class Restraints {
-  isCuffed = false
+  isCuffed = false;
   private readonly tick = new TickLoop(() => {
-    for (const control of BLOCKED) DisableControlAction(0, control, true)
-  })
-  private animTimer: ReturnType<typeof setInterval> | null = null
+    for (const control of BLOCKED) DisableControlAction(0, control, true);
+  });
+  private animTimer: ReturnType<typeof setInterval> | null = null;
 
   async setCuffed(on: boolean): Promise<void> {
-    this.isCuffed = on
-    this.tick.set(on)
-    if (this.animTimer) clearInterval(this.animTimer)
-    this.animTimer = null
-    const ped = cache.ped
+    this.isCuffed = on;
+    this.tick.set(on);
+    if (this.animTimer) clearInterval(this.animTimer);
+    this.animTimer = null;
+    const ped = cache.ped;
     if (!on) {
-      ClearPedTasks(ped)
-      return
+      ClearPedTasks(ped);
+      return;
     }
-    await requestAnimDict("mp_arresting")
-    SetCurrentPedWeapon(ped, GetHashKey("WEAPON_UNARMED"), true)
+    await requestAnimDict("mp_arresting");
+    SetCurrentPedWeapon(ped, GetHashKey("WEAPON_UNARMED"), true);
     const play = () => {
       if (!IsEntityPlayingAnim(cache.ped, "mp_arresting", "idle", 3))
         TaskPlayAnim(
@@ -48,23 +48,23 @@ class Restraints {
           0,
           false,
           false,
-          false
-        )
-    }
-    play()
-    this.animTimer = setInterval(play, 1000)
+          false,
+        );
+    };
+    play();
+    this.animTimer = setInterval(play, 1000);
   }
 
   async escort(officerNetId: number | null): Promise<void> {
-    const ped = cache.ped
-    if (officerNetId === null) return DetachEntity(ped, true, false)
+    const ped = cache.ped;
+    if (officerNetId === null) return DetachEntity(ped, true, false);
     const officer = await waitFor(
       () =>
         NetworkDoesEntityExistWithNetworkId(officerNetId)
           ? NetToPed(officerNetId)
           : undefined,
-      3000
-    ).catch(() => 0)
+      3000,
+    ).catch(() => 0);
     if (officer)
       AttachEntityToEntity(
         ped,
@@ -81,44 +81,44 @@ class Restraints {
         false,
         false,
         2,
-        true
-      )
+        true,
+      );
   }
 
   async seat(vehicleNetId: number | null): Promise<void> {
-    const ped = cache.ped
+    const ped = cache.ped;
     if (vehicleNetId === null) {
-      if (cache.vehicle !== false) TaskLeaveVehicle(ped, cache.vehicle, 16)
-      return
+      if (cache.vehicle !== false) TaskLeaveVehicle(ped, cache.vehicle, 16);
+      return;
     }
     const vehicle = await waitFor(
       () =>
         NetworkDoesEntityExistWithNetworkId(vehicleNetId)
           ? NetToVeh(vehicleNetId)
           : undefined,
-      3000
-    ).catch(() => 0)
-    if (!vehicle) return
-    DetachEntity(ped, true, false)
-    const seat = [1, 2, 0].find((s) => IsVehicleSeatFree(vehicle, s))
-    if (seat !== undefined) TaskWarpPedIntoVehicle(ped, vehicle, seat)
+      3000,
+    ).catch(() => 0);
+    if (!vehicle) return;
+    DetachEntity(ped, true, false);
+    const seat = [1, 2, 0].find((s) => IsVehicleSeatFree(vehicle, s));
+    if (seat !== undefined) TaskWarpPedIntoVehicle(ped, vehicle, seat);
   }
 }
 
-export const restraints = new Restraints()
+export const restraints = new Restraints();
 
 onServerEvent(
   EVENTS.cuffed,
   { args: ([on]) => [on === true] as const },
-  (on) => void restraints.setCuffed(on)
-)
+  (on) => void restraints.setCuffed(on),
+);
 onServerEvent(
   EVENTS.escort,
   { args: ([id]) => [typeof id === "number" ? id : null] as const },
-  (id) => void restraints.escort(id)
-)
+  (id) => void restraints.escort(id),
+);
 onServerEvent(
   EVENTS.seat,
   { args: ([id]) => [typeof id === "number" ? id : null] as const },
-  (id) => void restraints.seat(id)
-)
+  (id) => void restraints.seat(id),
+);

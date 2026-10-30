@@ -1,9 +1,9 @@
-import { bool, int, num, record, str } from "@aicore-fivem/lib/shared"
+import { bool, int, num, record, str } from "@aicore-fivem/lib/shared";
 
 /** ai-police's contracts and panel content. No natives. */
 
 export type Action =
-  "cuff" | "escort" | "seat" | "unseat" | "search" | "fine" | "impound"
+  "cuff" | "escort" | "seat" | "unseat" | "search" | "fine" | "impound";
 
 export const EVENTS = {
   /** Callback: (action, target serverId | vehicle netId, extra?) -> { ok } an officer acts on the closest player / vehicle. */
@@ -20,58 +20,58 @@ export const EVENTS = {
   seat: "ai-police:client:seat",
   /** Server -> officers on duty: (alert: Alert). */
   alert: "ai-police:client:alert",
-} as const
+} as const;
 
 export interface Alert {
-  id: number
+  id: number;
   /** shots: gunfire near a street; custom: another resource's text (robberies). */
-  kind: "shots" | "custom"
-  x: number
-  y: number
-  z: number
+  kind: "shots" | "custom";
+  x: number;
+  y: number;
+  z: number;
   /** The street (shots) or the alert text (custom). */
-  text: string
+  text: string;
 }
 
 export interface Settings {
-  jobs: string[]
-  maxFine: number
-  shotAlerts: boolean
+  jobs: string[];
+  maxFine: number;
+  shotAlerts: boolean;
   /** How long an alert blip stays on the map. */
-  alertSeconds: number
+  alertSeconds: number;
 }
 
 export interface Station {
-  id: string
-  label: string
-  duty: { x: number; y: number; z: number }
-  blip: boolean
+  id: string;
+  label: string;
+  duty: { x: number; y: number; z: number };
+  blip: boolean;
 }
 
 const names = (v: unknown): string[] =>
-  Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []
+  Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
 
 export function readSettings(raw: unknown): Settings {
-  const s = record(raw)
+  const s = record(raw);
   return {
     jobs: names(s.jobs).length ? names(s.jobs) : ["police"],
     maxFine: int(s.maxFine, 50_000, 0, 10_000_000),
     shotAlerts: bool(s.shotAlerts, true),
     alertSeconds: int(s.alertSeconds, 60, 10, 600),
-  }
+  };
 }
 
 export function readStations(raw: unknown): Map<string, Station> {
-  const out = new Map<string, Station>()
+  const out = new Map<string, Station>();
   for (const [id, value] of Object.entries(record(raw))) {
-    const v = record(value)
-    const d = record(v.duty)
+    const v = record(value);
+    const d = record(v.duty);
     out.set(id, {
       id,
       label: str(v.label, id, 48),
       duty: { x: num(d.x, 0), y: num(d.y, 0), z: num(d.z, 0) },
       blip: bool(v.blip, true),
-    })
+    });
   }
-  return out
+  return out;
 }

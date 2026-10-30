@@ -1,4 +1,4 @@
-import type { PanelSchema } from "@aicore-fivem/shared"
+import type { PanelSchema } from "@aicore-fivem/shared";
 
 /** ai-police's panel: which jobs are police, fines, alerts and the duty stations. */
 export const policeSchema: PanelSchema = {
@@ -117,4 +117,4 @@ export const policeSchema: PanelSchema = {
       ],
     },
   ],
-}
+};
