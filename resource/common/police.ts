@@ -31,6 +31,7 @@ export interface Station {
   label: string;
   duty: { x: number; y: number; z: number };
   blip: boolean;
+  blipStyle: { sprite: number; color: number; scale: number };
 }
 
 const names = (v: unknown): string[] =>
@@ -45,17 +46,19 @@ export function readSettings(raw: unknown): Settings {
   };
 }
 
-export function readStations(raw: unknown): Map<string, Station> {
-  const out = new Map<string, Station>();
-  for (const [id, value] of Object.entries(record(raw))) {
-    const v = record(value);
-    const d = record(v.duty);
-    out.set(id, {
-      id,
-      label: str(v.label, id, 48),
-      duty: { x: num(d.x, 0), y: num(d.y, 0), z: num(d.z, 0) },
-      blip: bool(v.blip, true),
-    });
-  }
-  return out;
+/** One duty station of the panel's records file (`panel.records` / `world.records`). */
+export function readStation(id: string, v: Record<string, unknown>): Station {
+  const d = record(v.duty);
+  const style = record(v.blipStyle);
+  return {
+    id,
+    label: str(v.label, id, 48),
+    duty: { x: num(d.x, 0), y: num(d.y, 0), z: num(d.z, 0) },
+    blip: bool(v.blip, true),
+    blipStyle: {
+      sprite: int(style.sprite, 60, 0, 1000),
+      color: int(style.color, 29, 0, 100),
+      scale: num(style.scale, 0.7, 0.3, 2),
+    },
+  };
 }

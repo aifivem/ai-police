@@ -45,5 +45,6 @@
   "ADMIN_P_LABEL": "Mission Row Police Department",
   "ADMIN_F_DUTY": "Duty point",
   "ADMIN_H_DUTY": "Stand where officers toggle duty and use your position.",
-  "ADMIN_F_BLIP": "Map blip"
+  "ADMIN_F_BLIP": "Map blip",
+  "ADMIN_F_BLIP_STYLE": "Blip look"
 }

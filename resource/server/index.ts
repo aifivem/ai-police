@@ -3,61 +3,71 @@ import {
   AdminPanel,
   aiLog,
   aiLogChannels,
+  coordsOf,
   dispatch,
   inventory,
+  isNear,
+  money,
   notify,
   onClientCallback,
   onClientEvent,
   online,
   optionalExport,
+  PlayerMap,
   PlayerState,
   resourceExport,
   stateBoolean,
+  vehicleNearPlayer,
 } from "@aicore-fivem/lib/server";
+import {
+  distance,
+  fail,
+  readFinite,
+  readId,
+  readInt,
+} from "@aicore-fivem/lib/shared";
 import { Locale } from "common";
-import { EVENTS, readSettings, readStations, type Action } from "common/police";
+import { EVENTS, readSettings, readStation, type Action } from "common/police";
 import { policeSchema } from "./schema";
 
 const core = resourceExport("ai-core");
 const panel = new AdminPanel(policeSchema);
-/** Panel content, parsed again after every change. */
-const content = {
-  settings: readSettings(panel.get("settings")),
-  stations: readStations(panel.get("stations")),
-};
-panel.onChange(
-  "settings",
-  () => (content.settings = readSettings(panel.get("settings"))),
-);
-panel.onChange(
-  "stations",
-  () => (content.stations = readStations(panel.get("stations"))),
-);
+/** Panel content, kept current by the panel. */
+const settings = panel.view("settings", readSettings);
+const stations = panel.records("stations", readStation);
 aiLogChannels({ actions: {}, fines: {} });
 
-const fail = (error: string) => ({ ok: false as const, error });
-const pos = (source: number) => {
-  const [x = 0, y = 0, z = 0] = GetEntityCoords(GetPlayerPed(String(source)));
-  return { x, y, z };
-};
-const near = (a: number, b: number, metres: number): boolean => {
-  const p = pos(a);
-  const q = pos(b);
-  return Math.hypot(p.x - q.x, p.y - q.y, p.z - q.z) <= metres;
-};
+const ACTIONS: readonly string[] = [
+  "cuff",
+  "escort",
+  "seat",
+  "unseat",
+  "search",
+  "fine",
+  "impound",
+] satisfies Action[];
 const onDutyOfficer = (source: number): boolean => {
   const duty = online.dutyJob(source);
-  return duty !== null && content.settings.jobs.includes(duty);
+  return duty !== null && settings.value.jobs.includes(duty);
 };
 
 /** Who is cuffed and who escorts whom (server truth; clients only play it). */
-const cuffed = new Set<number>();
+const cuffed = new PlayerMap<true>({
+  // A dropped target frees the officer escorting it (escorted players are always cuffed).
+  onDrop: (source) => {
+    for (const [officer, target] of escorting)
+      if (target === source) escorting.delete(officer);
+  },
+});
 const cuffedState = new PlayerState(PLAYER_BAGS.cuffed, stateBoolean);
 const deadState = new PlayerState(PLAYER_BAGS.dead, stateBoolean);
-const escorting = new Map<number, number>();
+/** officer -> escorted player; a dropped officer lets go of the target. */
+const escorting = new PlayerMap<number>({
+  onDrop: (_officer, target) => emitNet(EVENTS.escort, target, null),
+});
 
 function setCuffed(target: number, on: boolean): void {
-  if (on) cuffed.add(target);
+  if (on) cuffed.set(target, true);
   else cuffed.delete(target);
   cuffedState.set(target, on);
   emitNet(EVENTS.cuffed, target, on);
@@ -67,29 +77,16 @@ onClientCallback(
   EVENTS.act,
   {
     args: ([action, target, extra]) =>
-      [
-        "cuff",
-        "escort",
-        "seat",
-        "unseat",
-        "search",
-        "fine",
-        "impound",
-      ].includes(String(action)) && typeof target === "number"
-        ? [action as Action, target, extra]
+      ACTIONS.includes(String(action)) && readId(target) !== null
+        ? [action as Action, target as number, extra]
         : null,
     lock: true,
   },
   (source, action, target, extra) => {
     if (!onDutyOfficer(source)) return fail("POLICE_ERR_DUTY");
     if (action === "impound") {
-      const vehicle = NetworkGetEntityFromNetworkId(target);
-      if (!vehicle || !DoesEntityExist(vehicle) || GetEntityType(vehicle) !== 2)
-        return fail("POLICE_ERR_FAR");
-      const [vx = 0, vy = 0, vz = 0] = GetEntityCoords(vehicle);
-      const p = pos(source);
-      if (Math.hypot(p.x - vx, p.y - vy, p.z - vz) > 6)
-        return fail("POLICE_ERR_FAR");
+      const vehicle = vehicleNearPlayer(source, target, { metres: 6 });
+      if (!vehicle) return fail("POLICE_ERR_FAR");
       const api = optionalExport("ai-vehicles");
       const id = api?.GetVehicleIdByEntity(vehicle);
       if (api && id !== null && id !== undefined)
@@ -103,8 +100,8 @@ onClientCallback(
     }
     if (
       target === source ||
-      !core.GetCharacter(target) ||
-      !near(source, target, 3)
+      !online.character(target) ||
+      !isNear(source, coordsOf(target), 3)
     )
       return fail("POLICE_ERR_FAR");
     switch (action) {
@@ -132,10 +129,8 @@ onClientCallback(
         break;
       }
       case "seat": {
-        if (!cuffed.has(target) || typeof extra !== "number")
-          return fail("POLICE_ERR_NOT_CUFFED");
-        const vehicle = NetworkGetEntityFromNetworkId(extra);
-        if (!vehicle || !DoesEntityExist(vehicle))
+        if (!cuffed.has(target)) return fail("POLICE_ERR_NOT_CUFFED");
+        if (!vehicleNearPlayer(source, extra, { metres: 8 }))
           return fail("POLICE_ERR_FAR");
         escorting.delete(source);
         emitNet(EVENTS.escort, target, null);
@@ -152,14 +147,18 @@ onClientCallback(
           return fail("POLICE_ERR_FAR");
         break;
       case "fine": {
-        const amount =
-          typeof extra === "number" && Number.isInteger(extra) ? extra : 0;
-        if (amount <= 0 || amount > content.settings.maxFine)
-          return fail("POLICE_ERR_FINE");
-        const job = core.GetDutyJob(source) ?? "police";
-        if (!core.RemoveMoney(target, "bank", amount, `fine:${job}`))
+        const amount = readInt(extra, 1, settings.value.maxFine);
+        if (amount === null) return fail("POLICE_ERR_FINE");
+        const job = online.dutyJob(source) ?? "police";
+        if (
+          !money.transfer(
+            { source: target, account: "bank" },
+            { owner: "job", id: job, account: "bank" },
+            amount,
+            `fine:${job}`,
+          )
+        )
           return fail("POLICE_ERR_FINE_MONEY");
-        core.AddSharedMoney("job", job, "bank", amount, `fine by ${source}`);
         notify(target, Locale("POLICE_FINED", amount), "warning", 8000);
         aiLog("fines", `fined $${amount}`, {
           source,
@@ -182,22 +181,14 @@ onClientCallback(
   EVENTS.duty,
   { args: ([id]) => (typeof id === "string" ? [id] : null), lock: true },
   (source, id) => {
-    const station = content.stations.get(id);
-    const p = pos(source);
-    if (
-      !station ||
-      Math.hypot(
-        p.x - station.duty.x,
-        p.y - station.duty.y,
-        p.z - station.duty.z,
-      ) > 3
-    )
+    const station = stations.get(id);
+    if (!station || !isNear(source, station.duty, 3))
       return fail("POLICE_ERR_FAR");
-    const job = (core.GetJobs(source) ?? []).find((m) =>
-      content.settings.jobs.includes(m.job),
-    )?.job;
+    const job = online
+      .jobs(source)
+      .find((name) => settings.value.jobs.includes(name));
     if (!job) return fail("POLICE_ERR_NOT_POLICE");
-    const onDuty = core.GetDutyJob(source) !== job;
+    const onDuty = online.dutyJob(source) !== job;
     core.SetDuty(source, onDuty ? job : null);
     return { ok: true, onDuty };
   },
@@ -208,38 +199,32 @@ const recentShots: Array<{ x: number; y: number; at: number }> = [];
 onClientEvent(
   EVENTS.shot,
   {
-    args: ([x, y, z]) =>
-      typeof x === "number" && typeof y === "number" && typeof z === "number"
-        ? [x, y, z]
-        : null,
+    args: ([x, y, z]) => {
+      const point = [readFinite(x), readFinite(y), readFinite(z)] as const;
+      return point.every((v) => v !== null)
+        ? (point as readonly [number, number, number])
+        : null;
+    },
     rate: { count: 1, windowMs: 5000 },
   },
   (source, x, y, z) => {
-    if (!content.settings.shotAlerts || onDutyOfficer(source)) return;
-    const p = pos(source);
-    if (Math.hypot(p.x - x, p.y - y) > 50) return;
+    if (!settings.value.shotAlerts || onDutyOfficer(source)) return;
+    if (!isNear(source, { x, y, z }, 50)) return;
     const now = Date.now();
     while (recentShots.length && now - (recentShots[0]?.at ?? 0) > 30_000)
       recentShots.shift();
-    if (recentShots.some((a) => Math.hypot(a.x - x, a.y - y) < 150)) return;
+    if (recentShots.some((a) => distance({ ...a, z: 0 }, { x, y, z: 0 }) < 150))
+      return;
     recentShots.push({ x, y, at: now });
     dispatch.alert({
       code: "10-71",
       title: Locale("POLICE_ALERT_SHOTS"),
       coords: { x, y, z },
       source,
-      jobs: content.settings.jobs,
+      jobs: settings.value.jobs,
       icon: "gun",
       blip: { sprite: 110, color: 1 },
       priority: "high",
     });
   },
 );
-
-on("playerDropped", () => {
-  const source = Number(globalThis.source);
-  cuffed.delete(source);
-  escorting.delete(source);
-  for (const [officer, target] of escorting)
-    if (target === source) escorting.delete(officer);
-});

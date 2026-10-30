@@ -18,7 +18,7 @@ const CORE = {
 	clientPlayerLoadedEvent: "ai-core:client:playerLoaded",
 	clientPlayerUnloadedEvent: "ai-core:client:playerUnloaded",
 	clientCharacterPortraitEvent: "ai-core:client:characterPortrait",
-	clientCharacterLookEvent: "ai-core:client:characterLook",
+	characterLooksEvent: "ai-core:client:characterLooks",
 	clientPromptPressedEvent: "ai-core:client:promptPressed",
 	clientCacheEvent: "ai-core:client:cache",
 	clientHudVisibleEvent: "ai-core:client:hudVisible",
@@ -33,7 +33,8 @@ const CORE = {
 	openCharactersEvent: "ai-core:client:openCharacters"
 }, PLAYER_BAGS = {
 	dead: "dead",
-	cuffed: "cuffed"
+	cuffed: "cuffed",
+	proximity: "proximity"
 }, ADMIN = {
 	ace: "ai.admin",
 	openCallback: "ai-core:admin:open",
@@ -91,8 +92,17 @@ function str(value, fallback, max = 64) {
 function record(value) {
 	return typeof value == "object" && value && !Array.isArray(value) ? value : {};
 }
-// ../../../packages/lib/src/shared/records.ts
-const isObject = (value) => typeof value == "object" && !!value && !Array.isArray(value);
+// ../../../packages/lib/src/shared/strict.ts
+function readFinite(value) {
+	return typeof value == "number" && Number.isFinite(value) ? value : null;
+}
+function readInt(value, min, max) {
+	return Number.isInteger(value) && value >= min && value <= max ? value : null;
+}
+const readId = (value) => readInt(value, 1, 2147483647), fail = (error) => ({
+	ok: !1,
+	error
+}), distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z), isObject = (value) => typeof value == "object" && !!value && !Array.isArray(value);
 function readRecords(raw, readOne) {
 	let out = new Map();
 	if (!isObject(raw)) return out;
@@ -280,6 +290,20 @@ function loadLocaleTexts(resource = GetCurrentResourceName()) {
 }
 // ../../../packages/lib/src/fivem/callbackNames.ts
 const requestEvent = (name) => `aicore:cb:${name}`, responseEvent = (resource) => `aicore:cbr:${resource}`;
+// ../../../packages/lib/src/server/position.ts
+function entityCoords(entity) {
+	let [x = 0, y = 0, z = 0] = GetEntityCoords(entity);
+	return {
+		x,
+		y,
+		z
+	};
+}
+const coordsOf = (source) => entityCoords(GetPlayerPed(String(source)));
+function isNear(source, point, metres) {
+	let [x = 0, y = 0, z = 0] = GetEntityCoords(GetPlayerPed(String(source))), dx = x - point.x, dy = y - point.y, dz = z - point.z;
+	return dx * dx + dy * dy + dz * dz <= metres * metres;
+}
 resourceExport(CORE.resource);
 const log$5 = createLogger(GetCurrentResourceName()), gates = new Set();
 on("playerDropped", () => {
@@ -389,7 +413,7 @@ function toPatch(value) {
 		default: return null;
 	}
 }
-const clone = (value) => value === void 0 ? value : JSON.parse(JSON.stringify(value)), core$14 = resourceExport(CORE.resource), ERR = {
+const clone = (value) => value === void 0 ? value : JSON.parse(JSON.stringify(value)), core$15 = resourceExport(CORE.resource), ERR = {
 	type: "ADMIN_ERR_TYPE",
 	range: "ADMIN_ERR_RANGE",
 	length: "ADMIN_ERR_LENGTH",
@@ -403,7 +427,7 @@ const clone = (value) => value === void 0 ? value : JSON.parse(JSON.stringify(va
 		if (cached && Date.now() - cached.at < 2e3) return cached.values.size > 0 ? cached.values : null;
 		let list = [];
 		try {
-			list = core$14.GetLookupValues(source);
+			list = core$15.GetLookupValues(source);
 		} catch {}
 		let values = new Set(Array.isArray(list) ? list.filter((v) => typeof v == "string") : []);
 		return this.lists.set(source, {
@@ -606,7 +630,7 @@ function writeSchema(resource, name, text, log) {
 	(0, node_fs_promises.mkdir)(dir, { recursive: !0 }).then(() => (0, node_fs_promises.writeFile)(`${dir}/${name}.schema.json`, text, "utf8")).catch((error) => log.error(`writing ${resource}/${path} failed`, error));
 }
 // ../../../packages/lib/src/server/admin/panel.ts
-const core$13 = resourceExport(CORE.resource), DEFAULT_KEY = "^[a-z0-9_]{2,32}$";
+const core$14 = resourceExport(CORE.resource), DEFAULT_KEY = "^[a-z0-9_]{2,32}$";
 function imported(spec, value) {
 	let base = clone(spec.newRecord ?? {}), out = {};
 	for (let name of Object.keys(spec.sections)) {
@@ -630,7 +654,7 @@ var AdminPanel = class {
 	constructor(schema) {
 		this.schema = schema;
 		for (let [name, spec] of Object.entries(schema.files)) this.load(name, spec);
-		registerExport("AdminPanelSnapshot", () => this.snapshot()), registerExport("AdminPanelApply", (admin, patch) => this.apply(admin, patch)), onClientCallback(ADMIN.worldChangesCallback(this.resource), () => Object.fromEntries(this.worldChanges)), setImmediate(() => core$13.RegisterAdminPanel(this.resource));
+		registerExport("AdminPanelSnapshot", () => this.snapshot()), registerExport("AdminPanelApply", (admin, patch) => this.apply(admin, patch)), onClientCallback(ADMIN.worldChangesCallback(this.resource), () => Object.fromEntries(this.worldChanges)), setImmediate(() => core$14.RegisterAdminPanel(this.resource));
 	}
 	get(file) {
 		return this.data.get(file) ?? {};
@@ -764,7 +788,7 @@ var AdminPanel = class {
 		let spec = this.schema.files[file], data = this.get(file), value = key === void 0 ? data : data[key] ?? null;
 		this.dataFiles.get(file)?.write(data), this.views.changed(file, key, value);
 		for (let handler of this.handlers.get(file) ?? []) handler(key, value);
-		if (core$13.AdminPanelChanged({
+		if (core$14.AdminPanelChanged({
 			resource: this.resource,
 			file,
 			key,
@@ -802,19 +826,19 @@ function notify(source, text, kind = "info", duration) {
 	emitNet(CORE.clientNotifyEvent, source, notification);
 }
 // ../../../packages/lib/src/server/inventory.ts
-const core$12 = resourceExport(CORE.resource), inventory = {
-	addItem: (inv, item, count = 1, metadata, slot) => core$12.AddItem(inv, item, count, metadata, slot),
-	removeItem: (inv, item, count = 1, metadata, slot) => core$12.RemoveItem(inv, item, count, metadata, slot),
-	getItemCount: (inv, item, metadata) => core$12.GetItemCount(inv, item, metadata),
-	hasItem: (inv, item, count = 1) => core$12.HasItem(inv, item, count),
-	canCarryItem: (inv, item, count = 1, metadata) => core$12.CanCarryItem(inv, item, count, metadata),
-	getItems: (inv) => core$12.GetItems(inv),
-	clearInventory: (inv) => core$12.ClearInventory(inv),
-	registerStash: (name, label, slots, maxWeight, jobs = []) => core$12.RegisterStash(name, label, slots, maxWeight, jobs),
-	openInventory: (source, inv) => core$12.OpenInventory(source, inv),
-	registerUsableItem: (name, handler) => core$12.RegisterUsableItem(name, handler),
-	getItemDefinition: (name) => core$12.GetItemDefinition(name)
-}, core$11 = resourceExport(CORE.resource);
+const core$13 = resourceExport(CORE.resource), inventory = {
+	addItem: (inv, item, count = 1, metadata, slot) => core$13.AddItem(inv, item, count, metadata, slot),
+	removeItem: (inv, item, count = 1, metadata, slot) => core$13.RemoveItem(inv, item, count, metadata, slot),
+	getItemCount: (inv, item, metadata) => core$13.GetItemCount(inv, item, metadata),
+	hasItem: (inv, item, count = 1) => core$13.HasItem(inv, item, count),
+	canCarryItem: (inv, item, count = 1, metadata) => core$13.CanCarryItem(inv, item, count, metadata),
+	getItems: (inv) => core$13.GetItems(inv),
+	clearInventory: (inv) => core$13.ClearInventory(inv),
+	registerStash: (name, label, slots, maxWeight, jobs = []) => core$13.RegisterStash(name, label, slots, maxWeight, jobs),
+	openInventory: (source, inv) => core$13.OpenInventory(source, inv),
+	registerUsableItem: (name, handler) => core$13.RegisterUsableItem(name, handler),
+	getItemDefinition: (name) => core$13.GetItemDefinition(name)
+}, core$12 = resourceExport(CORE.resource);
 var OnlinePlayers = class {
 	players = new Map();
 	onDuty = new Map();
@@ -823,7 +847,7 @@ var OnlinePlayers = class {
 		if (this.started) return;
 		this.started = !0;
 		let load = (source, character) => {
-			this.put(source, character, (core$11.GetJobs(source) ?? []).map((m) => m.job), (core$11.GetGangs(source) ?? []).map((m) => m.gang)), this.setDuty(source, core$11.GetDutyJob(source));
+			this.put(source, character, (core$12.GetJobs(source) ?? []).map((m) => m.job), (core$12.GetGangs(source) ?? []).map((m) => m.gang)), this.setDuty(source, core$12.GetDutyJob(source));
 		};
 		on(CORE.playerLoadedEvent, load), on(CORE.playerUnloadedEvent, (source) => this.drop(source)), on(CORE.jobsChangedEvent, (source, jobs) => {
 			let player = this.players.get(source);
@@ -832,8 +856,8 @@ var OnlinePlayers = class {
 			let player = this.players.get(source);
 			player && (player.gangs = gangs.map((m) => m.gang));
 		}), on(CORE.dutyChangedEvent, (source, job) => this.setDuty(source, job));
-		for (let source of core$11.GetLoadedSources()) {
-			let character = core$11.GetCharacter(source);
+		for (let source of core$12.GetLoadedSources()) {
+			let character = core$12.GetCharacter(source);
 			character && load(source, character);
 		}
 	}
@@ -877,7 +901,39 @@ var OnlinePlayers = class {
 	}
 };
 const EMPTY = new Set(), online = new OnlinePlayers();
-resourceExport(CORE.resource), resourceExport(CORE.resource), createLogger(GetCurrentResourceName());
+resourceExport(CORE.resource);
+// ../../../packages/lib/src/server/vehicle.ts
+function vehicleFromNet(netId) {
+	if (readId(netId) === null) return 0;
+	let entity = NetworkGetEntityFromNetworkId(netId);
+	return entity && DoesEntityExist(entity) && GetEntityType(entity) === 2 ? entity : 0;
+}
+function vehicleNearPlayer(source, netId, options = {}) {
+	let vehicle = vehicleFromNet(netId);
+	if (!vehicle) return 0;
+	let ped = GetPlayerPed(String(source));
+	if (options.driver) return GetPedInVehicleSeat(vehicle, -1) === ped ? vehicle : 0;
+	let [px = 0, py = 0, pz = 0] = GetEntityCoords(ped), [vx = 0, vy = 0, vz = 0] = GetEntityCoords(vehicle);
+	return Math.hypot(vx - px, vy - py, vz - pz) <= (options.metres ?? 5) ? vehicle : 0;
+}
+resourceExport(CORE.resource), createLogger(GetCurrentResourceName());
+const dropped = new Set();
+let listening = !1;
+function onDropped(fn) {
+	listening || (listening = !0, on("playerDropped", () => {
+		let source = Number(globalThis.source);
+		for (let handler of dropped) handler(source);
+	})), dropped.add(fn);
+}
+var PlayerMap = class extends Map {
+	constructor(options = {}) {
+		super(), onDropped((source) => {
+			if (!this.has(source)) return;
+			let value = this.get(source);
+			this.delete(source), options.onDrop?.(source, value);
+		});
+	}
+};
 // ../../../packages/lib/src/server/command.ts
 const resource = GetCurrentResourceName();
 createLogger(resource), new class {
@@ -966,7 +1022,7 @@ var Mirror = class {
 };
 resourceExport(CORE.resource), resourceExport(CORE.resource);
 // ../../../packages/lib/src/server/dispatch.ts
-const core$6 = resourceExport(CORE.resource), dispatch = { alert: (alert) => core$6.SendDispatchAlert(alert) };
+const core$7 = resourceExport(CORE.resource), dispatch = { alert: (alert) => core$7.SendDispatchAlert(alert) }, core$6 = resourceExport(CORE.resource), money = { transfer: (from, to, amount, reason, fee) => core$6.TransferMoney(from, to, amount, reason, fee) };
 resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource);
 // resource/common/locale.ts
 const Locale = createLocale();
@@ -988,22 +1044,23 @@ function readSettings(raw) {
 		shotAlerts: bool(s.shotAlerts, !0)
 	};
 }
-function readStations(raw) {
-	let out = new Map();
-	for (let [id, value] of Object.entries(record(raw))) {
-		let v = record(value), d = record(v.duty);
-		out.set(id, {
-			id,
-			label: str(v.label, id, 48),
-			duty: {
-				x: num(d.x, 0),
-				y: num(d.y, 0),
-				z: num(d.z, 0)
-			},
-			blip: bool(v.blip, !0)
-		});
-	}
-	return out;
+function readStation(id, v) {
+	let d = record(v.duty), style = record(v.blipStyle);
+	return {
+		id,
+		label: str(v.label, id, 48),
+		duty: {
+			x: num(d.x, 0),
+			y: num(d.y, 0),
+			z: num(d.z, 0)
+		},
+		blip: bool(v.blip, !0),
+		blipStyle: {
+			sprite: int(style.sprite, 60, 0, 1e3),
+			color: int(style.color, 29, 0, 100),
+			scale: num(style.scale, .7, .3, 2)
+		}
+	};
 }
 // resource/server/schema.ts
 const policeSchema = {
@@ -1041,7 +1098,12 @@ const policeSchema = {
 					y: 0,
 					z: 0
 				},
-				blip: !0
+				blip: !0,
+				blipStyle: {
+					sprite: 60,
+					color: 29,
+					scale: .7
+				}
 			},
 			sections: {
 				label: {
@@ -1050,7 +1112,30 @@ const policeSchema = {
 					max: 48
 				},
 				duty: { type: "vec3" },
-				blip: { type: "bool" }
+				blip: { type: "bool" },
+				blipStyle: {
+					type: "object",
+					optional: !0,
+					fields: {
+						sprite: {
+							type: "number",
+							min: 0,
+							max: 1e3,
+							integer: !0
+						},
+						color: {
+							type: "number",
+							min: 0,
+							max: 100,
+							integer: !0
+						},
+						scale: {
+							type: "number",
+							min: .3,
+							max: 2
+						}
+					}
+				}
 			}
 		}
 	},
@@ -1122,48 +1207,43 @@ const policeSchema = {
 					widget: "switch",
 					path: "blip",
 					label: "ADMIN_F_BLIP"
+				},
+				{
+					widget: "blip",
+					path: "blipStyle",
+					label: "ADMIN_F_BLIP_STYLE",
+					showIf: {
+						path: "blip",
+						values: [!0]
+					}
 				}
 			]
 		}]
 	}]
-}, core = resourceExport("ai-core"), panel = new AdminPanel(policeSchema), content = {
-	settings: readSettings(panel.get("settings")),
-	stations: readStations(panel.get("stations"))
-};
-panel.onChange("settings", () => content.settings = readSettings(panel.get("settings"))), panel.onChange("stations", () => content.stations = readStations(panel.get("stations"))), aiLogChannels({
+}, core = resourceExport("ai-core"), panel = new AdminPanel(policeSchema), settings = panel.view("settings", readSettings), stations = panel.records("stations", readStation);
+aiLogChannels({
 	actions: {},
 	fines: {}
 });
-const fail = (error) => ({
-	ok: !1,
-	error
-}), pos = (source) => {
-	let [x = 0, y = 0, z = 0] = GetEntityCoords(GetPlayerPed(String(source)));
-	return {
-		x,
-		y,
-		z
-	};
-}, near = (a, b, metres) => {
-	let p = pos(a), q = pos(b);
-	return Math.hypot(p.x - q.x, p.y - q.y, p.z - q.z) <= metres;
-}, onDutyOfficer = (source) => {
+const ACTIONS = [
+	"cuff",
+	"escort",
+	"seat",
+	"unseat",
+	"search",
+	"fine",
+	"impound"
+], onDutyOfficer = (source) => {
 	let duty = online.dutyJob(source);
-	return duty !== null && content.settings.jobs.includes(duty);
-}, cuffed = new Set(), cuffedState = new PlayerState(PLAYER_BAGS.cuffed, stateBoolean), deadState = new PlayerState(PLAYER_BAGS.dead, stateBoolean), escorting = new Map();
+	return duty !== null && settings.value.jobs.includes(duty);
+}, cuffed = new PlayerMap({ onDrop: (source) => {
+	for (let [officer, target] of escorting) target === source && escorting.delete(officer);
+} }), cuffedState = new PlayerState(PLAYER_BAGS.cuffed, stateBoolean), deadState = new PlayerState(PLAYER_BAGS.dead, stateBoolean), escorting = new PlayerMap({ onDrop: (_officer, target) => emitNet(EVENTS.escort, target, null) });
 function setCuffed(target, on) {
-	on ? cuffed.add(target) : cuffed.delete(target), cuffedState.set(target, on), emitNet(EVENTS.cuffed, target, on);
+	on ? cuffed.set(target, !0) : cuffed.delete(target), cuffedState.set(target, on), emitNet(EVENTS.cuffed, target, on);
 }
 onClientCallback(EVENTS.act, {
-	args: ([action, target, extra]) => [
-		"cuff",
-		"escort",
-		"seat",
-		"unseat",
-		"search",
-		"fine",
-		"impound"
-	].includes(String(action)) && typeof target == "number" ? [
+	args: ([action, target, extra]) => ACTIONS.includes(String(action)) && readId(target) !== null ? [
 		action,
 		target,
 		extra
@@ -1172,17 +1252,15 @@ onClientCallback(EVENTS.act, {
 }, (source, action, target, extra) => {
 	if (!onDutyOfficer(source)) return fail("POLICE_ERR_DUTY");
 	if (action === "impound") {
-		let vehicle = NetworkGetEntityFromNetworkId(target);
-		if (!vehicle || !DoesEntityExist(vehicle) || GetEntityType(vehicle) !== 2) return fail("POLICE_ERR_FAR");
-		let [vx = 0, vy = 0, vz = 0] = GetEntityCoords(vehicle), p = pos(source);
-		if (Math.hypot(p.x - vx, p.y - vy, p.z - vz) > 6) return fail("POLICE_ERR_FAR");
+		let vehicle = vehicleNearPlayer(source, target, { metres: 6 });
+		if (!vehicle) return fail("POLICE_ERR_FAR");
 		let api = optionalExport("ai-vehicles"), id = api?.GetVehicleIdByEntity(vehicle);
 		return api && id != null ? api.StoreVehicle(id, null, "impound") : DeleteEntity(vehicle), aiLog("actions", "impounded a vehicle", {
 			source,
 			metadata: { plate: GetVehicleNumberPlateText(vehicle) }
 		}), { ok: !0 };
 	}
-	if (target === source || !core.GetCharacter(target) || !near(source, target, 3)) return fail("POLICE_ERR_FAR");
+	if (target === source || !online.character(target) || !isNear(source, coordsOf(target), 3)) return fail("POLICE_ERR_FAR");
 	switch (action) {
 		case "cuff":
 			setCuffed(target, !cuffed.has(target)), !cuffed.has(target) && escorting.get(source) === target && (escorting.delete(source), emitNet(EVENTS.escort, target, null));
@@ -1191,13 +1269,11 @@ onClientCallback(EVENTS.act, {
 			if (!cuffed.has(target)) return fail("POLICE_ERR_NOT_CUFFED");
 			escorting.get(source) === target ? (escorting.delete(source), emitNet(EVENTS.escort, target, null)) : (escorting.set(source, target), emitNet(EVENTS.escort, target, NetworkGetNetworkIdFromEntity(GetPlayerPed(String(source)))));
 			break;
-		case "seat": {
-			if (!cuffed.has(target) || typeof extra != "number") return fail("POLICE_ERR_NOT_CUFFED");
-			let vehicle = NetworkGetEntityFromNetworkId(extra);
-			if (!vehicle || !DoesEntityExist(vehicle)) return fail("POLICE_ERR_FAR");
+		case "seat":
+			if (!cuffed.has(target)) return fail("POLICE_ERR_NOT_CUFFED");
+			if (!vehicleNearPlayer(source, extra, { metres: 8 })) return fail("POLICE_ERR_FAR");
 			escorting.delete(source), emitNet(EVENTS.escort, target, null), emitNet(EVENTS.seat, target, extra);
 			break;
-		}
 		case "unseat":
 			emitNet(EVENTS.seat, target, null);
 			break;
@@ -1206,11 +1282,18 @@ onClientCallback(EVENTS.act, {
 			if (!inventory.openInventory(source, target)) return fail("POLICE_ERR_FAR");
 			break;
 		case "fine": {
-			let amount = typeof extra == "number" && Number.isInteger(extra) ? extra : 0;
-			if (amount <= 0 || amount > content.settings.maxFine) return fail("POLICE_ERR_FINE");
-			let job = core.GetDutyJob(source) ?? "police";
-			if (!core.RemoveMoney(target, "bank", amount, `fine:${job}`)) return fail("POLICE_ERR_FINE_MONEY");
-			core.AddSharedMoney("job", job, "bank", amount, `fine by ${source}`), notify(target, Locale("POLICE_FINED", amount), "warning", 8e3), aiLog("fines", `fined $${amount}`, {
+			let amount = readInt(extra, 1, settings.value.maxFine);
+			if (amount === null) return fail("POLICE_ERR_FINE");
+			let job = online.dutyJob(source) ?? "police";
+			if (!money.transfer({
+				source: target,
+				account: "bank"
+			}, {
+				owner: "job",
+				id: job,
+				account: "bank"
+			}, amount, `fine:${job}`)) return fail("POLICE_ERR_FINE_MONEY");
+			notify(target, Locale("POLICE_FINED", amount), "warning", 8e3), aiLog("fines", `fined $${amount}`, {
 				source,
 				target,
 				metadata: {
@@ -1230,11 +1313,11 @@ onClientCallback(EVENTS.act, {
 	args: ([id]) => typeof id == "string" ? [id] : null,
 	lock: !0
 }, (source, id) => {
-	let station = content.stations.get(id), p = pos(source);
-	if (!station || Math.hypot(p.x - station.duty.x, p.y - station.duty.y, p.z - station.duty.z) > 3) return fail("POLICE_ERR_FAR");
-	let job = (core.GetJobs(source) ?? []).find((m) => content.settings.jobs.includes(m.job))?.job;
+	let station = stations.get(id);
+	if (!station || !isNear(source, station.duty, 3)) return fail("POLICE_ERR_FAR");
+	let job = online.jobs(source).find((name) => settings.value.jobs.includes(name));
 	if (!job) return fail("POLICE_ERR_NOT_POLICE");
-	let onDuty = core.GetDutyJob(source) !== job;
+	let onDuty = online.dutyJob(source) !== job;
 	return core.SetDuty(source, onDuty ? job : null), {
 		ok: !0,
 		onDuty
@@ -1242,22 +1325,34 @@ onClientCallback(EVENTS.act, {
 });
 const recentShots = [];
 onClientEvent(EVENTS.shot, {
-	args: ([x, y, z]) => typeof x == "number" && typeof y == "number" && typeof z == "number" ? [
-		x,
-		y,
-		z
-	] : null,
+	args: ([x, y, z]) => {
+		let point = [
+			readFinite(x),
+			readFinite(y),
+			readFinite(z)
+		];
+		return point.every((v) => v !== null) ? point : null;
+	},
 	rate: {
 		count: 1,
 		windowMs: 5e3
 	}
 }, (source, x, y, z) => {
-	if (!content.settings.shotAlerts || onDutyOfficer(source)) return;
-	let p = pos(source);
-	if (Math.hypot(p.x - x, p.y - y) > 50) return;
+	if (!settings.value.shotAlerts || onDutyOfficer(source) || !isNear(source, {
+		x,
+		y,
+		z
+	}, 50)) return;
 	let now = Date.now();
 	for (; recentShots.length && now - (recentShots[0]?.at ?? 0) > 3e4;) recentShots.shift();
-	recentShots.some((a) => Math.hypot(a.x - x, a.y - y) < 150) || (recentShots.push({
+	recentShots.some((a) => distance({
+		...a,
+		z: 0
+	}, {
+		x,
+		y,
+		z: 0
+	}) < 150) || (recentShots.push({
 		x,
 		y,
 		at: now
@@ -1270,7 +1365,7 @@ onClientEvent(EVENTS.shot, {
 			z
 		},
 		source,
-		jobs: content.settings.jobs,
+		jobs: settings.value.jobs,
 		icon: "gun",
 		blip: {
 			sprite: 110,
@@ -1278,8 +1373,4 @@ onClientEvent(EVENTS.shot, {
 		},
 		priority: "high"
 	}));
-}), on("playerDropped", () => {
-	let source = Number(globalThis.source);
-	cuffed.delete(source), escorting.delete(source);
-	for (let [officer, target] of escorting) target === source && escorting.delete(officer);
 });

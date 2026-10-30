@@ -2,9 +2,9 @@ import {
   cache,
   controls,
   onServerEvent,
-  requestAnimDict,
+  player,
 } from "@aicore-fivem/lib/client";
-import { waitFor } from "@aicore-fivem/lib/shared";
+import { readId, waitFor } from "@aicore-fivem/lib/shared";
 import { EVENTS } from "common/police";
 
 /** Controls a cuffed player cannot use: attack, aim, sprint, jump, cover, weapon wheel, enter / leave vehicle, melee. */
@@ -31,23 +31,10 @@ class Restraints {
       ClearPedTasks(ped);
       return;
     }
-    await requestAnimDict("mp_arresting");
     SetCurrentPedWeapon(ped, GetHashKey("WEAPON_UNARMED"), true);
     const play = () => {
       if (!IsEntityPlayingAnim(cache.ped, "mp_arresting", "idle", 3))
-        TaskPlayAnim(
-          cache.ped,
-          "mp_arresting",
-          "idle",
-          8,
-          -8,
-          -1,
-          49,
-          0,
-          false,
-          false,
-          false,
-        );
+        void player.playAnim("mp_arresting", "idle", { flag: 49 });
     };
     play();
     this.animTimer = setInterval(play, 1000);
@@ -112,11 +99,11 @@ onServerEvent(
 );
 onServerEvent(
   EVENTS.escort,
-  { args: ([id]) => [typeof id === "number" ? id : null] as const },
+  { args: ([id]) => [readId(id)] as const },
   (id) => void restraints.escort(id),
 );
 onServerEvent(
   EVENTS.seat,
-  { args: ([id]) => [typeof id === "number" ? id : null] as const },
+  { args: ([id]) => [readId(id)] as const },
   (id) => void restraints.seat(id),
 );
