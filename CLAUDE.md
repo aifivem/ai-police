@@ -1,6 +1,6 @@
 # ai-police
 
-Police work for on-duty members of the panel's police jobs: a job menu (F6, ai-core's shared menu) to cuff, escort, seat / unseat, search, fine and impound; duty points; shot alerts on the map of on-duty officers. Depends on ai-core (jobs, duty, money, menu, input, prompts); the active inventory through ai-core's inventory layer (lib `inventory`) (search), ai-vehicles (impound) optional. Research and decisions: `docs/research/ai-police.md`.
+Police work for on-duty members of the panel's police jobs: a job menu (F6, ai-core's shared menu) to cuff, escort, seat / unseat, search, fine and impound; duty points; shot alerts on the map of on-duty officers. Depends on ai-core (jobs, duty, money, menu, input, prompts); the active inventory through ai-core's inventory layer (lib `inventory`) (search), ai-vehicles (impound) optional.
 
 ## Decisions
 
