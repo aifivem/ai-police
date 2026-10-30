@@ -3,12 +3,14 @@ import {
   cache,
   callAction,
   getPlayerData,
+  hasJob,
   input,
   Keybind,
   menu,
   nearestPlayer,
   nearestVehicle,
   notify,
+  onMembershipChange,
   onPlayerData,
   onShot,
   player,
@@ -116,6 +118,7 @@ function rebuild(): void {
       label: Locale("POLICE_PROMPT_DUTY"),
       icon: "user-shield",
       radius: 1.5,
+      canShow: () => hasJob(settings.value.jobs),
       blip: station.blip
         ? { ...station.blipStyle, label: station.label }
         : undefined,
@@ -124,6 +127,7 @@ function rebuild(): void {
 }
 rebuild();
 world.onChange("stations", rebuild);
+onMembershipChange(() => points.refresh());
 
 async function toggleDuty(stationId: string): Promise<void> {
   const r = await callAction(EVENTS.duty, [stationId], {
