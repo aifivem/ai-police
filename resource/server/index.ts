@@ -1,16 +1,5 @@
-import {
-  AdminPanel,
-  aiLog,
-  aiLogChannels,
-  inventory,
-  notify,
-  onClientCallback,
-  onClientEvent,
-  online,
-  optionalExport,
-  registerExport,
-  resourceExport,
-} from "@aicore-fivem/lib/server";
+import { PLAYER_BAGS } from "@aicore-fivem/shared";
+import { AdminPanel, aiLog, aiLogChannels, inventory, notify, onClientCallback, onClientEvent, online, optionalExport, PlayerState, registerExport, resourceExport, stateBoolean } from "@aicore-fivem/lib/server";
 import { Locale } from "common";
 import {
   EVENTS,
@@ -55,12 +44,14 @@ const onDutyOfficer = (source: number): boolean => {
 
 /** Who is cuffed and who escorts whom (server truth; clients only play it). */
 const cuffed = new Set<number>();
+const cuffedState = new PlayerState(PLAYER_BAGS.cuffed, stateBoolean);
+const deadState = new PlayerState(PLAYER_BAGS.dead, stateBoolean);
 const escorting = new Map<number, number>();
 
 function setCuffed(target: number, on: boolean): void {
   if (on) cuffed.add(target);
   else cuffed.delete(target);
-  Player(target).state.set("cuffed", on, true);
+  cuffedState.set(target, on);
   emitNet(EVENTS.cuffed, target, on);
 }
 
@@ -147,7 +138,7 @@ onClientCallback(
         emitNet(EVENTS.seat, target, null);
         break;
       case "search":
-        if (!cuffed.has(target) && !Player(target).state.dead)
+        if (!cuffed.has(target) && deadState.get(target) !== true)
           return fail("POLICE_ERR_NOT_CUFFED");
         if (!inventory.openInventory(source, target))
           return fail("POLICE_ERR_FAR");
