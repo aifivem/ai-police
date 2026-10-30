@@ -40,7 +40,7 @@
   "ADMIN_TAB_STATIONS": "Stations",
   "ADMIN_TAB_STATIONS_DESC": "Where officers go on and off duty.",
   "ADMIN_NEW_STATION": "New station",
-  "ADMIN_DELETE_STATION": "Delete this station?",
+  "ADMIN_DELETE_STATION": "Delete station",
   "ADMIN_C_STATION": "Station",
   "ADMIN_C_STATION_DESC": "A duty point and its map blip.",
   "ADMIN_F_LABEL": "Name",
