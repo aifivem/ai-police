@@ -60,7 +60,8 @@ const CORE = {
 	cancelProgressEvent: "ai-lib:client:cancelProgress",
 	progressForCallback: "ai-lib:progressFor",
 	progressForCancelEvent: "ai-lib:client:progressForCancel",
-	minigameForCallback: "ai-lib:minigameFor"
+	minigameForCallback: "ai-lib:minigameFor",
+	zoneEvent: "ai-lib:client:zone"
 };
 // ../../../packages/lib/src/server/rateLimit.ts
 var SourceLock = class {
