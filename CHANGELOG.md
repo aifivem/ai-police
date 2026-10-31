@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/aifivem/ai-police/compare/v0.2.0...v0.2.1) (2026-10-31)
+
+
+### Miscellaneous Chores
+
+* rebuild with the current lib ([3015923](https://github.com/aifivem/ai-police/commit/301592352252cf94156baac88bfceadaa1797621))
+
 ## [0.2.0](https://github.com/aifivem/ai-police/compare/v0.1.0...v0.2.0) (2026-10-31)
 
 
