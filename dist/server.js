@@ -35,6 +35,8 @@ const CORE = {
 	selectCharacterCallback: "ai-core:selectCharacter",
 	clientNotifyEvent: "ai-core:client:notify",
 	spawnEvent: "ai-core:client:spawn",
+	chooseSpawnEvent: "ai-core:client:chooseSpawn",
+	spawnChoiceCallback: "ai-core:spawnChoice",
 	openCharactersEvent: "ai-core:client:openCharacters"
 }, PLAYER_BAGS = {
 	dead: "dead",
