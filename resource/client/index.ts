@@ -5,6 +5,7 @@ import {
   hasJob,
   input,
   Keybind,
+  medical,
   menu,
   nearestPlayer,
   nearestVehicle,
@@ -93,7 +94,7 @@ const ACTIONS = [
 ] as const satisfies ReadonlyArray<{ id: Action; icon: string; label: string }>;
 
 async function openMenu(): Promise<void> {
-  if (!onDuty() || restraints.isCuffed || IsEntityDead(cache.ped)) return;
+  if (!onDuty() || restraints.isCuffed || medical.isDead()) return;
   const picked = await menu({
     title: Locale("POLICE_MENU_TITLE"),
     items: ACTIONS.map((a) => ({

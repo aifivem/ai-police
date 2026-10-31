@@ -1,8 +1,6 @@
 import {
   cache,
   controls,
-  every,
-  type Job,
   onServerEvent,
   player,
   waitForEntity,
@@ -21,26 +19,21 @@ const BLOCKED = [
  */
 class Restraints {
   isCuffed = false;
-  private animTimer: Job | null = null;
+  private hold: { stop(): void } | null = null;
 
   async setCuffed(on: boolean): Promise<void> {
     this.isCuffed = on;
     if (on) controls.disable("cuffed", BLOCKED);
     else controls.enable("cuffed");
-    this.animTimer?.stop();
-    this.animTimer = null;
+    this.hold?.stop();
+    this.hold = null;
     const ped = cache.ped;
     if (!on) {
       ClearPedTasks(ped);
       return;
     }
     SetCurrentPedWeapon(ped, GetHashKey("WEAPON_UNARMED"), true);
-    const play = () => {
-      if (!IsEntityPlayingAnim(cache.ped, "mp_arresting", "idle", 3))
-        void player.playAnim("mp_arresting", "idle", { flag: 49 });
-    };
-    play();
-    this.animTimer = every(1000, play, { name: "cuffedAnim" });
+    this.hold = player.holdAnim("mp_arresting", "idle", { flag: 49 });
   }
 
   async escort(officerNetId: number | null): Promise<void> {
