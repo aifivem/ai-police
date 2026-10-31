@@ -1,6 +1,6 @@
 name 'ai-police'
 author 'TGIANN'
-version '0.1.0'
+version '0.1.0' -- x-release-please-version
 license 'GPL-3.0-only'
 description 'Police: job menu, cuffs, escort, search, fines, impound, duty points, shot alerts'
 repository 'https://github.com/aifivem/ai-police'
