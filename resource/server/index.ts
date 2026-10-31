@@ -14,6 +14,7 @@ import {
   online,
   optionalExport,
   PlayerMap,
+  plateOf,
   PlayerState,
   prison,
   resourceExport,
@@ -87,6 +88,8 @@ onClientCallback(
     if (action === "impound") {
       const vehicle = vehicleNearPlayer(source, target, { metres: 6 });
       if (!vehicle) return fail("POLICE_ERR_FAR");
+      // Read before storing: the entity is gone afterwards.
+      const plate = plateOf(vehicle);
       const api = optionalExport("ai-vehicles");
       const id = api?.GetVehicleIdByEntity(vehicle);
       if (api && id !== null && id !== undefined)
@@ -94,7 +97,7 @@ onClientCallback(
       else DeleteEntity(vehicle);
       aiLog("actions", "impounded a vehicle", {
         source,
-        metadata: { plate: GetVehicleNumberPlateText(vehicle) },
+        metadata: { plate },
       });
       return { ok: true };
     }

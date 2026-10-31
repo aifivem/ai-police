@@ -2,7 +2,6 @@ import {
   AdminWorld,
   cache,
   callAction,
-  getPlayerData,
   hasJob,
   input,
   Keybind,
@@ -10,6 +9,7 @@ import {
   nearestPlayer,
   nearestVehicle,
   notify,
+  onDutyIn,
   onMembershipChange,
   onPlayerData,
   onShot,
@@ -17,18 +17,16 @@ import {
   Points,
   radial,
 } from "@aicore-fivem/lib/client";
+import { RecordObjects } from "@aicore-fivem/lib/shared";
 import { Locale } from "common";
 import { EVENTS, readSettings, readStation, type Action } from "common/police";
 import { restraints } from "./restraints";
 
 const world = new AdminWorld(["settings", "stations"]);
 const settings = world.view("settings", readSettings);
-const stations = world.records("stations", readStation);
 
-const onDuty = (): boolean => {
-  const duty = getPlayerData("duty");
-  return typeof duty === "string" && settings.value.jobs.includes(duty);
-};
+/** On duty in one of the panel's police jobs (the server's `online.onDutyIn` with the same list). */
+const onDuty = (): boolean => onDutyIn(settings.value.jobs);
 
 async function act(action: Action): Promise<void> {
   let target: number | null;
@@ -126,25 +124,22 @@ new Keybind({
   onPressed: () => void openMenu(),
 });
 
-/** Duty stations: a point each, with blips. */
+/** Duty stations: a point each, with blips; an edited station rebuilds only its own. */
 const points = new Points();
-function rebuild(): void {
-  points.clear();
-  for (const station of stations.values())
-    points.add(`duty:${station.id}`, {
-      coords: station.duty,
-      label: Locale("POLICE_PROMPT_DUTY"),
-      icon: "user-shield",
-      radius: 1.5,
-      canShow: () => hasJob(settings.value.jobs),
-      blip: station.blip
-        ? { ...station.blipStyle, label: station.label }
-        : undefined,
-      onPressed: () => toggleDuty(station.id),
-    });
-}
-rebuild();
-world.onChange("stations", rebuild);
+new RecordObjects(world, "stations", readStation, (id, station) => {
+  points.add(`duty:${id}`, {
+    coords: station.duty,
+    label: Locale("POLICE_PROMPT_DUTY"),
+    icon: "user-shield",
+    radius: 1.5,
+    canShow: () => hasJob(settings.value.jobs),
+    blip: station.blip
+      ? { ...station.blipStyle, label: station.label }
+      : undefined,
+    onPressed: () => toggleDuty(id),
+  });
+  return () => points.remove(`duty:${id}`);
+});
 onMembershipChange(() => points.refresh());
 
 async function toggleDuty(stationId: string): Promise<void> {

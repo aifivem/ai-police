@@ -42,6 +42,7 @@ const CORE = {
 }, ADMIN = {
 	ace: "ai.admin",
 	openCallback: "ai-core:admin:open",
+	panelDataCallback: "ai-core:admin:panelData",
 	applyCallback: "ai-core:admin:apply",
 	closeEvent: "ai-core:admin:close",
 	showEvent: "ai-core:admin:show",
@@ -114,7 +115,7 @@ function readInt(value, min, max) {
 const readId = (value) => readInt(value, 1, 2147483647), fail = (error) => ({
 	ok: !1,
 	error
-}), distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z), BLIP_STYLE_FIELDS = {
+}), distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z), isPublic = (rule) => rule.jobs.length === 0 && rule.gangs.length === 0, BLIP_STYLE_FIELDS = {
 	sprite: {
 		type: "number",
 		min: 0,
@@ -749,7 +750,7 @@ var AdminPanel = class {
 	constructor(schema) {
 		this.schema = schema;
 		for (let [name, spec] of Object.entries(schema.files)) this.load(name, spec);
-		registerExport("AdminPanelSnapshot", () => this.snapshot()), registerExport("AdminPanelApply", (admin, patch) => this.apply(admin, patch)), onClientCallback(ADMIN.worldChangesCallback(this.resource), () => Object.fromEntries(this.worldChanges), { rate: {
+		registerExport("AdminPanelSnapshot", () => this.snapshot()), registerExport("AdminPanelSummary", () => this.summary()), registerExport("AdminPanelApply", (admin, patch) => this.apply(admin, patch)), onClientCallback(ADMIN.worldChangesCallback(this.resource), () => Object.fromEntries(this.worldChanges), { rate: {
 			count: 4,
 			windowMs: 1e4
 		} }), setImmediate(() => core$15.RegisterAdminPanel(this.resource));
@@ -778,6 +779,27 @@ var AdminPanel = class {
 			schema: this.schema,
 			texts: loadLocaleTexts(),
 			data: clone(Object.fromEntries(this.data))
+		};
+	}
+	summary() {
+		let data = {}, index = {};
+		for (let [file, spec] of Object.entries(this.schema.files)) {
+			let content = this.data.get(file);
+			if (spec.kind !== "records") {
+				data[file] = clone(content ?? {});
+				continue;
+			}
+			let labels = {};
+			for (let [key, record] of Object.entries(content ?? {})) labels[key] = labelOf(record, spec.labelPath) ?? key;
+			index[file] = labels;
+		}
+		return {
+			resource: this.resource,
+			schema: this.schema,
+			texts: loadLocaleTexts(),
+			data,
+			loaded: !1,
+			index
 		};
 	}
 	apply(admin, raw) {
@@ -863,6 +885,15 @@ var AdminPanel = class {
 		this.data.set(name, data), (filled || raw === null || !file.hasSchemaRef()) && file.write(data);
 	}
 };
+function labelOf(record, path) {
+	if (!path) return null;
+	let at = record;
+	for (let part of path.split(".")) {
+		if (typeof at != "object" || !at) return null;
+		at = at[part];
+	}
+	return typeof at == "string" && at !== "" ? at : null;
+}
 // ../../../packages/lib/src/server/log.ts
 function aiLog(channel, message, options) {
 	optionalExport("ai-core")?.Log(channel, message, options);
@@ -993,6 +1024,20 @@ var OnlinePlayers = class {
 		let duty = this.dutyJob(source);
 		return duty !== null && jobs.includes(duty);
 	}
+	allows(source, rule) {
+		if (isPublic(rule)) return !0;
+		let min = (name) => rule.grades[name] ?? 0;
+		for (let gang of rule.gangs) {
+			let grade = this.gangGrade(source, gang);
+			if (grade !== null && grade >= min(gang)) return !0;
+		}
+		let duty = rule.onDuty ? this.dutyJob(source) : null;
+		for (let job of rule.jobs) {
+			let grade = this.jobGrade(source, job);
+			if (grade !== null && grade >= min(job) && (!rule.onDuty || duty === job)) return !0;
+		}
+		return !1;
+	}
 	countOnDuty(jobs) {
 		this.start();
 		let count = 0;
@@ -1082,6 +1127,8 @@ function onClientEvent(name, first, second) {
 	});
 }
 createLogger("aicore-lib");
+// ../../../packages/lib/src/fivem/byResource.ts
+const plateOf = (vehicle) => GetVehicleNumberPlateText(vehicle).trim().toUpperCase();
 // ../../../packages/lib/src/fivem/scheduler.ts
 var Group = class {
 	interval;
@@ -1438,10 +1485,10 @@ onClientCallback(EVENTS.act, {
 	if (action === "impound") {
 		let vehicle = vehicleNearPlayer(source, target, { metres: 6 });
 		if (!vehicle) return fail("POLICE_ERR_FAR");
-		let api = optionalExport("ai-vehicles"), id = api?.GetVehicleIdByEntity(vehicle);
+		let plate = plateOf(vehicle), api = optionalExport("ai-vehicles"), id = api?.GetVehicleIdByEntity(vehicle);
 		return api && id != null ? api.StoreVehicle(id, null, "impound") : DeleteEntity(vehicle), aiLog("actions", "impounded a vehicle", {
 			source,
-			metadata: { plate: GetVehicleNumberPlateText(vehicle) }
+			metadata: { plate }
 		}), { ok: !0 };
 	}
 	if (target === source || !online.character(target) || !isNear(source, coordsOf(target), 3)) return fail("POLICE_ERR_FAR");
