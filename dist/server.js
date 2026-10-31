@@ -21,21 +21,16 @@ const CORE = {
 	clientPlayerUnloadedEvent: "ai-core:client:playerUnloaded",
 	clientCharacterPortraitEvent: "ai-core:client:characterPortrait",
 	characterLooksEvent: "ai-core:client:characterLooks",
-	clientPromptPressedEvent: "ai-core:client:promptPressed",
 	clientCacheEvent: "ai-core:client:cache",
 	clientHudVisibleEvent: "ai-core:client:hudVisible",
 	clientWorldSyncEvent: "ai-core:client:worldSync",
-	clientCancelProgressEvent: "ai-core:client:cancelProgress",
 	clientDefinitionsEvent: "ai-core:client:definitions",
 	vehicleTypeCallback: "ai-core:vehicleType",
-	progressForCallback: "ai-core:progressFor",
-	progressForCancelEvent: "ai-core:client:progressForCancel",
 	interactionStateKey: "ai:interaction",
 	charactersCallback: "ai-core:characters",
 	createCharacterCallback: "ai-core:createCharacter",
 	deleteCharacterCallback: "ai-core:deleteCharacter",
 	selectCharacterCallback: "ai-core:selectCharacter",
-	clientNotifyEvent: "ai-core:client:notify",
 	spawnEvent: "ai-core:client:spawn",
 	chooseSpawnEvent: "ai-core:client:chooseSpawn",
 	spawnChoiceCallback: "ai-core:spawnChoice",
@@ -54,6 +49,14 @@ const CORE = {
 	recommendationEvent: "ai-core:admin:recommendation",
 	worldEvent: (resource) => `${resource}:admin:world`,
 	worldChangesCallback: (resource) => `${resource}:admin:worldChanges`
+}, LIB_UI = {
+	resource: "ai-lib",
+	notifyEvent: "ai-lib:client:notify",
+	promptPressedEvent: "ai-lib:client:promptPressed",
+	cancelProgressEvent: "ai-lib:client:cancelProgress",
+	progressForCallback: "ai-lib:progressFor",
+	progressForCancelEvent: "ai-lib:client:progressForCancel",
+	minigameForCallback: "ai-lib:minigameFor"
 };
 // ../../../packages/lib/src/server/rateLimit.ts
 var SourceLock = class {
@@ -874,7 +877,7 @@ function notify(source, text, kind = "info", duration) {
 		kind,
 		duration
 	};
-	emitNet(CORE.clientNotifyEvent, source, notification);
+	emitNet(LIB_UI.notifyEvent, source, notification);
 }
 // ../../../packages/lib/src/server/inventory.ts
 const core$14 = resourceExport(CORE.resource), inventory = {
