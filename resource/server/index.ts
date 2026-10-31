@@ -3,16 +3,17 @@ import {
   AdminPanel,
   aiLog,
   aiLogChannels,
+  billing,
   coordsOf,
   dispatch,
+  garages,
   inventory,
   isNear,
-  money,
+  mdt,
   notify,
   onClientCallback,
   onClientEvent,
   online,
-  optionalExport,
   PlayerMap,
   plateOf,
   PlayerState,
@@ -88,13 +89,10 @@ onClientCallback(
     if (action === "impound") {
       const vehicle = vehicleNearPlayer(source, target, { metres: 6 });
       if (!vehicle) return fail("POLICE_ERR_FAR");
-      // Read before storing: the entity is gone afterwards.
+      // Read before impounding: the entity is gone afterwards.
       const plate = plateOf(vehicle);
-      const api = optionalExport("ai-vehicles");
-      const id = api?.GetVehicleIdByEntity(vehicle);
-      if (api && id !== null && id !== undefined)
-        api.StoreVehicle(id, null, "impound");
-      else DeleteEntity(vehicle);
+      // The garage script takes owned vehicles (or opens its impound form for the officer); anything else goes.
+      if (!garages.impound(vehicle, source)) DeleteEntity(vehicle);
       aiLog("actions", "impounded a vehicle", {
         source,
         metadata: { plate },
@@ -155,6 +153,13 @@ onClientCallback(
         if (minutes === null) return fail("POLICE_ERR_JAIL");
         if (!prison.jail(target, minutes, source))
           return fail("POLICE_ERR_NO_PRISON");
+        mdt.record({
+          kind: "arrest",
+          target,
+          by: source,
+          title: Locale("POLICE_RECORD_ARREST"),
+          minutes,
+        });
         escorting.delete(source);
         emitNet(EVENTS.escort, target, null);
         setCuffed(target, false);
@@ -164,15 +169,10 @@ onClientCallback(
         const amount = readInt(extra, 1, settings.value.maxFine);
         if (amount === null) return fail("POLICE_ERR_FINE");
         const job = online.dutyJob(source) ?? "police";
-        if (
-          !money.transfer(
-            { source: target, account: "bank" },
-            { owner: "job", id: job, account: "bank" },
-            amount,
-            `fine:${job}`,
-          )
-        )
-          return fail("POLICE_ERR_FINE_MONEY");
+        const label = Locale("POLICE_FINE_LABEL");
+        if (!billing.send({ to: target, amount, label, from: source, job }))
+          return fail("POLICE_ERR_FINE_SEND");
+        mdt.record({ kind: "fine", target, by: source, title: label, amount });
         notify(target, Locale("POLICE_FINED", amount), "warning", 8000);
         aiLog("fines", `fined $${amount}`, {
           source,

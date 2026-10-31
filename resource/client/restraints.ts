@@ -1,6 +1,7 @@
 import {
   cache,
   controls,
+  gestures,
   onServerEvent,
   player,
   waitForEntity,
@@ -33,6 +34,8 @@ class Restraints {
       return;
     }
     SetCurrentPedWeapon(ped, GetHashKey("WEAPON_UNARMED"), true);
+    // An emote of the emote script (a prop in hand, a dance) would fight the cuffed animation.
+    gestures.cancelEmote();
     this.hold = player.holdAnim("mp_arresting", "idle", { flag: 49 });
   }
 
