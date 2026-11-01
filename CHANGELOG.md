@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/aifivem/ai-police/compare/v0.2.1...v0.2.2) (2026-11-01)
+
+
+### Code Refactoring
+
+* feature folders, side entries that only import, panel schema per tab ([552fdae](https://github.com/aifivem/ai-police/commit/552fdaeeb64b3ef2c57638c0e155ae35752fabd4))
+
 ## [0.2.1](https://github.com/aifivem/ai-police/compare/v0.2.0...v0.2.1) (2026-10-31)
 
 
