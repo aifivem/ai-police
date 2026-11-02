@@ -5,7 +5,7 @@ import {
   readBlipStyle,
   record,
   str,
-} from "@aicore-fivem/lib/shared";
+} from "@aifivem/lib/shared";
 
 /** ai-police's contracts and panel content. No natives. */
 

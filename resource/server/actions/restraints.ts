@@ -1,5 +1,5 @@
-import { PlayerMap, PlayerState, stateBoolean } from "@aicore-fivem/lib/server";
-import { PLAYER_BAGS } from "@aicore-fivem/shared";
+import { PlayerMap, PlayerState, stateBoolean } from "@aifivem/lib/server";
+import { PLAYER_BAGS } from "@aifivem/shared";
 import { EVENTS } from "common/police";
 
 /** Who is cuffed and who escorts whom (server truth; clients only play it). */

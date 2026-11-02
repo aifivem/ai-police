@@ -10,7 +10,7 @@ import {
   onDutyIn,
   onPlayerData,
   radial,
-} from "@aicore-fivem/lib/client";
+} from "@aifivem/lib/client";
 import { Locale } from "common";
 import { EVENTS, type Action } from "common/police";
 import { restraints } from "./restraints";

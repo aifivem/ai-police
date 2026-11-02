@@ -1,5 +1,5 @@
-import { dispatch, isNear, onClientEvent } from "@aicore-fivem/lib/server";
-import { distance, readFinite } from "@aicore-fivem/lib/shared";
+import { dispatch, isNear, onClientEvent } from "@aifivem/lib/server";
+import { distance, readFinite } from "@aifivem/lib/shared";
 import { Locale } from "common";
 import { EVENTS } from "common/police";
 import { onDutyOfficer, settings } from "./content";

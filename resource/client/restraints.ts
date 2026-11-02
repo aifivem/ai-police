@@ -5,8 +5,8 @@ import {
   onServerEvent,
   player,
   waitForEntity,
-} from "@aicore-fivem/lib/client";
-import { readId } from "@aicore-fivem/lib/shared";
+} from "@aifivem/lib/client";
+import { readId } from "@aifivem/lib/shared";
 import { EVENTS } from "common/police";
 
 /** Controls a cuffed player cannot use: attack, aim, sprint, jump, cover, weapon wheel, enter / leave vehicle, melee. */

@@ -1,5 +1,5 @@
-import type { PanelSchema } from "@aicore-fivem/shared";
-import { BLIP_STYLE_FIELDS } from "@aicore-fivem/lib/shared";
+import type { PanelSchema } from "@aifivem/shared";
+import { BLIP_STYLE_FIELDS } from "@aifivem/lib/shared";
 
 /** ai-police's panel: which jobs are police, fines, alerts and the duty stations. */
 export const policeSchema: PanelSchema = {
