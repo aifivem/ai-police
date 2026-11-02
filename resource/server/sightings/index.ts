@@ -3,6 +3,7 @@ import {
   dispatch,
   mdt,
   online,
+  phone,
   plateOf,
   registerExport,
   vehicleOf,
@@ -52,3 +53,6 @@ registerExport("ReportSighting", (rawSource: unknown, rawPlace: unknown) => {
   const place = readText(rawPlace, 32)?.toLowerCase();
   if (source !== null && place) void reportSighting(source, place);
 });
+
+// Every phone ai-core's phone layer knows: one report per opening (ai-core sends at most one per 10 s).
+phone.onUsed((source) => void reportSighting(source, "phone"));
