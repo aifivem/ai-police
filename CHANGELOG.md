@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/aifivem/ai-police/compare/v0.2.2...v0.2.3) (2026-11-02)
+
+
+### Code Refactoring
+
+* import the shared packages from [@aifivem](https://github.com/aifivem) ([439a62b](https://github.com/aifivem/ai-police/commit/439a62b9eb2154390c6a8ccec913139c9b3c5fdd))
+
 ## [0.2.2](https://github.com/aifivem/ai-police/compare/v0.2.1...v0.2.2) (2026-11-01)
 
 
