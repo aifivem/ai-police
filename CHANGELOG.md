@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.4](https://github.com/aifivem/ai-police/compare/v0.2.3...v0.2.4) (2026-11-02)
+
+
+### Documentation
+
+* install from the release zip ([0ef5459](https://github.com/aifivem/ai-police/commit/0ef5459204c9ff265a526fbdeefac96f00a51535))
+
+
+### Miscellaneous Chores
+
+* build files are no longer in git, the release zip carries them ([45271eb](https://github.com/aifivem/ai-police/commit/45271eb2ae6e2239cc37beee0509ada7a9b751ea))
+
 ## [0.2.3](https://github.com/aifivem/ai-police/compare/v0.2.2...v0.2.3) (2026-11-02)
 
 
