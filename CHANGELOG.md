@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.3.0](https://github.com/aifivem/ai-police/compare/v0.2.4...v0.3.0) (2026-11-02)
+
+
+### New Features
+
+* **police:** alert police when a wanted suspect is seen ([6d84dab](https://github.com/aifivem/ai-police/commit/6d84dab1b7f85aaf45505ac18de1d0eabaa704f0))
+* **police:** count phone use as a wanted sighting through ai-core's phone layer ([f875a1a](https://github.com/aifivem/ai-police/commit/f875a1aac90a002f2040a4eaf2d21ec7554deeb7))
+* **police:** issue and clear warrants from the job menu ([374c8ba](https://github.com/aifivem/ai-police/commit/374c8ba4332f1aab712e596ac290f44ddccd8c6e))
+
 ## [0.2.4](https://github.com/aifivem/ai-police/compare/v0.2.3...v0.2.4) (2026-11-02)
 
 
