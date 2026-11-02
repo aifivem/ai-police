@@ -3,3 +3,4 @@ import "./actions";
 import "./duty";
 import "./shots";
 import "./sightings";
+import "./warrants";

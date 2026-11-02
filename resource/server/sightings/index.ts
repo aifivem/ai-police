@@ -31,7 +31,7 @@ async function reportSighting(source: number, place: string): Promise<void> {
   if (!rules.enabled || !character) return;
   // Taken before the warrant check, like the original: one roll per cooldown, whatever the place.
   if (!cooldowns.take(source, rules.cooldown * 1000)) return;
-  // The active MDT's answer (false while none runs or it exposes no warrants).
+  // The MDT's and / or ai-core's own warrants, by ai-core's panel setting `warrants`.
   if (!(await mdt.hasWarrant(character.citizenid))) return;
   // The answer may come later: the same character must still be in the game.
   if (online.character(source)?.citizenid !== character.citizenid) return;

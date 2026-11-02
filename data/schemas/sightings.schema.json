@@ -1,0 +1,82 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ai-police/data/sightings.json",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "This file's JSON Schema (for editors)."
+    },
+    "enabled": {
+      "description": "Report wanted players: On-duty officers of the police jobs get an alert with the suspect's name, sex, vehicle and a map blip, through the alert script ai-core uses.",
+      "type": "boolean"
+    },
+    "cooldown": {
+      "description": "Wait between reports: Seconds before the same player can be reported again, whatever the place.",
+      "type": "integer",
+      "minimum": 5,
+      "maximum": 3600
+    },
+    "defaultChance": {
+      "description": "Chance for other places: Used when a script reports a place the list below does not name.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "places": {
+      "description": "Places",
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "properties": {
+          "place": {
+            "description": "Place name",
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 32,
+            "pattern": "^([a-z0-9_-]{2,32})?$"
+          },
+          "chance": {
+            "description": "Chance",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "place",
+          "chance"
+        ]
+      }
+    },
+    "blip": {
+      "description": "Alert blip",
+      "type": "object",
+      "properties": {
+        "sprite": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "color": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "scale": {
+          "type": "number",
+          "minimum": 0.3,
+          "maximum": 2
+        }
+      },
+      "required": [
+        "sprite",
+        "color",
+        "scale"
+      ]
+    }
+  },
+  "required": []
+}

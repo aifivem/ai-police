@@ -11,9 +11,11 @@ import {
   onPlayerData,
   radial,
 } from "@aifivem/lib/client";
+import { MENU_BACK } from "@aifivem/shared";
 import { Locale } from "common";
 import { EVENTS, type Action } from "common/police";
 import { restraints } from "./restraints";
+import { warrantsMenu } from "./warrants";
 import { settings, world } from "./world";
 
 /** On duty in one of the panel's police jobs (the server's `online.onDutyIn` with the same list). */
@@ -87,12 +89,23 @@ async function openMenu(): Promise<void> {
   if (!onDuty() || restraints.isCuffed || medical.isDead()) return;
   const picked = await menu({
     title: Locale("POLICE_MENU_TITLE"),
-    items: ACTIONS.map((a) => ({
-      id: a.id,
-      label: Locale(a.label),
-      icon: a.icon,
-    })),
+    items: [
+      ...ACTIONS.map((a) => ({
+        id: a.id,
+        label: Locale(a.label),
+        icon: a.icon,
+      })),
+      {
+        id: "warrants",
+        label: Locale("POLICE_ACTION_WARRANTS"),
+        icon: "gavel",
+      },
+    ],
   });
+  if (picked === "warrants") {
+    if ((await warrantsMenu()) === MENU_BACK) await openMenu();
+    return;
+  }
   const action = ACTIONS.find((a) => a.id === picked)?.id;
   if (action) await act(action);
 }

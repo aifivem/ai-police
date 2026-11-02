@@ -22,6 +22,16 @@ export type Action =
 export const EVENTS = {
   /** Callback: (action, target serverId | vehicle netId, extra?) -> { ok } an officer acts on the closest player / vehicle. */
   act: "ai-police:act",
+  /** Callback: (text) -> { ok, people: { charId, citizenid, name }[] } characters for the warrants menu (on duty). */
+  warrantSearch: "ai-police:warrants:search",
+  /** Callback: (charId) -> { ok, warrants: Warrant[], now } a character's active warrants. */
+  warrantsOf: "ai-police:warrants:of",
+  /** Callback: (cursor | null) -> { ok, warrants: WarrantRow[], next, now } every active warrant, newest first. */
+  warrantList: "ai-police:warrants:list",
+  /** Callback: (charId, reason, minutes | null) -> { ok } issue a warrant (null = until cleared). */
+  warrantAdd: "ai-police:warrants:add",
+  /** Callback: (warrantId) -> { ok } clear a warrant. */
+  warrantClear: "ai-police:warrants:clear",
   /** Callback: (stationId) -> { ok, onDuty } toggle duty at a station. */
   duty: "ai-police:duty",
   /** Client -> server: (x, y, z) the player fired a weapon (rate limited; only non-police count). */
