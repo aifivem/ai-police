@@ -1,0 +1,37 @@
+{
+  "$schema": "./schemas/sightings.schema.json",
+  "enabled": true,
+  "cooldown": 60,
+  "defaultChance": 100,
+  "places": [
+    {
+      "place": "atm",
+      "chance": 100
+    },
+    {
+      "place": "bank",
+      "chance": 100
+    },
+    {
+      "place": "shop",
+      "chance": 60
+    },
+    {
+      "place": "clothing",
+      "chance": 20
+    },
+    {
+      "place": "garage",
+      "chance": 60
+    },
+    {
+      "place": "phone",
+      "chance": 1
+    }
+  ],
+  "blip": {
+    "sprite": 126,
+    "color": 1,
+    "scale": 1
+  }
+}
